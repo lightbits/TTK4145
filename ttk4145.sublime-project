@@ -1,0 +1,22 @@
+{
+	"folders":
+	[
+		{
+			"path": "/exercises"
+		},
+		{
+			"path": "/project"
+		}
+	],
+	"settings":
+	{
+		"color_scheme": "Packages/User/freshefarger2.tmTheme",
+		"draw_centered": true,
+		"font_face": "Consolas",
+		"font_size": 10,
+		"gutter": true,
+		"line_numbers": true,
+		"word_wrap": true,
+		"wrap_width": 100
+	}
+}

@@ -1,0 +1,1303 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"hmap",
+				"hmap_height"
+			],
+			[
+				"def",
+				"default"
+			],
+			[
+				"occlu",
+				"occlusion_factor"
+			],
+			[
+				"occ",
+				"occlusion_factor"
+			],
+			[
+				"sun_",
+				"sun_direction"
+			],
+			[
+				"diff",
+				"diffusivity"
+			],
+			[
+				"inter",
+				"intersect"
+			],
+			[
+				"is_",
+				"is_order_above"
+			],
+			[
+				"floor",
+				"floor_has_order"
+			],
+			[
+				"elev_get",
+				"elev_get_button_signal"
+			],
+			[
+				"AU",
+				"AUDIO_PICKUP"
+			],
+			[
+				"refra",
+				"refraction_tex"
+			],
+			[
+				"refr",
+				"refraction_tex"
+			],
+			[
+				"compile",
+				"compileAndCheckStatus"
+			],
+			[
+				"GL_ONE",
+				"GL_ONE_MINUS_SRC_ALPHA"
+			],
+			[
+				"create",
+				"createColorBandsTexture"
+			],
+			[
+				"calcula",
+				"calculatePixelColor"
+			],
+			[
+				"alph",
+				"alpha_series_1"
+			],
+			[
+				"sum",
+				"sum_of_digits0"
+			],
+			[
+				"lowe",
+				"lowestCommonPower"
+			],
+			[
+				"factors",
+				"factorsAndPowers"
+			],
+			[
+				"prime",
+				"primeFactorize"
+			],
+			[
+				"dist",
+				"distinctTerms"
+			],
+			[
+				"max",
+				"maxPrimeLengthB"
+			],
+			[
+				"maxPr",
+				"maxPrimeLengthB"
+			],
+			[
+				"g_window",
+				"g_windowHeight"
+			],
+			[
+				"g_windo",
+				"g_windowHeight"
+			],
+			[
+				"lon",
+				"longestCycleD"
+			],
+			[
+				"longe",
+				"longestCycleN"
+			],
+			[
+				"long",
+				"longestCycle"
+			],
+			[
+				"check",
+				"checkForPattern"
+			],
+			[
+				"poss",
+				"possiblePairsFromProduct"
+			],
+			[
+				"doesPolly",
+				"doesPollyKnowNow"
+			],
+			[
+				"possible",
+				"possiblePairsFromSum"
+			],
+			[
+				"possi",
+				"possibleXy"
+			],
+			[
+				"sums",
+				"sumsThatSamCanHave"
+			],
+			[
+				"pos",
+				"possiblePairsFromSum"
+			],
+			[
+				"w",
+				"where"
+			],
+			[
+				"index",
+				"indexed_vertex_array"
+			],
+			[
+				"read_vert",
+				"read_vertex_index"
+			],
+			[
+				"ver",
+				"vertex_index_size"
+			],
+			[
+				"tex",
+				"texture_index_size"
+			],
+			[
+				"greate",
+				"greatestStride"
+			],
+			[
+				"greatest",
+				"greatestStrideFrom"
+			],
+			[
+				"grea",
+				"greatestStride"
+			],
+			[
+				"for",
+				"for	For Loop"
+			],
+			[
+				"fair",
+				"fairAndSquareCount"
+			],
+			[
+				"Matrix",
+				"MatrixDimensionMismatchException"
+			],
+			[
+				"prev",
+				"prev_velocity"
+			],
+			[
+				"dia",
+				"diagonal"
+			],
+			[
+				"t",
+				"tp	template <typename ${1:_InputIter}>"
+			],
+			[
+				"f",
+				"forv	Vector For Loop"
+			],
+			[
+				"contains",
+				"contains_uppercase"
+			],
+			[
+				"contain",
+				"contains_digit"
+			],
+			[
+				"gaa",
+				"gaa_tilbake"
+			],
+			[
+				"lock",
+				"locked_path"
+			],
+			[
+				"error",
+				"error_2"
+			],
+			[
+				"left",
+				"left_margin"
+			],
+			[
+				"key",
+				"key_count"
+			],
+			[
+				"s",
+				"str"
+			],
+			[
+				"num",
+				"num_frequency"
+			],
+			[
+				"infe",
+				"infected_cheese"
+			],
+			[
+				"n",
+				"n"
+			],
+			[
+				"multi",
+				"multi_table"
+			],
+			[
+				"simp",
+				"simpson_error"
+			],
+			[
+				"d",
+				"d_polynom"
+			],
+			[
+				"work",
+				"workday_count"
+			],
+			[
+				"week",
+				"weekday"
+			],
+			[
+				"yea",
+				"year_length"
+			],
+			[
+				"is",
+				"is_leapyear"
+			],
+			[
+				"R",
+				"R.hello"
+			],
+			[
+				"last",
+				"last_project_dir"
+			],
+			[
+				"subli",
+				"sublime-settings"
+			],
+			[
+				"packa",
+				"package_name"
+			],
+			[
+				"proj",
+				"project_name"
+			],
+			[
+				"sub",
+				"sublime-settings"
+			],
+			[
+				"last_pack",
+				"last_package_input"
+			],
+			[
+				"last_",
+				"last_apk_input"
+			],
+			[
+				"project",
+				"project_path"
+			],
+			[
+				"Android",
+				"AndroidPaths"
+			],
+			[
+				"default",
+				"default_project_dir"
+			],
+			[
+				"defa",
+				"default_project_dir"
+			],
+			[
+				"text",
+				"text_split"
+			],
+			[
+				"run",
+				"run_command"
+			],
+			[
+				"android",
+				"android_sdk"
+			],
+			[
+				"sublime",
+				"sublime_plugin"
+			],
+			[
+				"screencap",
+				"screencapture"
+			],
+			[
+				"aw",
+				"awt"
+			],
+			[
+				"ja",
+				"java"
+			],
+			[
+				"person",
+				"person"
+			],
+			[
+				"do",
+				"document"
+			],
+			[
+				"Sy",
+				"System"
+			],
+			[
+				"Input",
+				"InputStreamReader"
+			],
+			[
+				"Inputst",
+				"InputStreamReader"
+			],
+			[
+				"im",
+				"imt: import junit.framework.TestCase;"
+			],
+			[
+				"null",
+				"null"
+			],
+			[
+				"Str",
+				"String"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "ttk4145.sublime-project",
+			"settings":
+			{
+				"buffer_size": 316,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "exercises/exercise1/exercise1.txt",
+			"settings":
+			{
+				"buffer_size": 6383,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "project/readme.md",
+			"settings":
+			{
+				"buffer_size": 716,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "exercises/exercise1/helloworld_go.go",
+			"settings":
+			{
+				"buffer_size": 866,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "Packages/User/Akari.sublime-build",
+	"command_palette":
+	{
+		"height": 150.0,
+		"selected_items":
+		[
+			[
+				"syntax go",
+				"Set Syntax: Go"
+			],
+			[
+				"syntax c++",
+				"Set Syntax: C++"
+			],
+			[
+				"syntax c",
+				"Set Syntax: C"
+			],
+			[
+				"syntax markdown",
+				"Set Syntax: Markdown"
+			],
+			[
+				"syntax",
+				"Set Syntax: ASP"
+			],
+			[
+				"syntax python",
+				"Set Syntax: Python"
+			],
+			[
+				"syntax html",
+				"Set Syntax: HTML"
+			],
+			[
+				"syntax javascript",
+				"Set Syntax: JavaScript"
+			],
+			[
+				"syntax markdow",
+				"Set Syntax: Markdown"
+			],
+			[
+				"syntax mark",
+				"Set Syntax: Markdown"
+			],
+			[
+				"syntax txt",
+				"Set Syntax: TeX Math"
+			],
+			[
+				"syntax ++",
+				"Set Syntax: C++"
+			],
+			[
+				"syntax batch",
+				"Set Syntax: Batch File"
+			],
+			[
+				"syntax r",
+				"Set Syntax: R"
+			],
+			[
+				"syntax ",
+				"Set Syntax: ASP"
+			],
+			[
+				"syntax text",
+				"Set Syntax: Plain Text"
+			],
+			[
+				"syntax lua",
+				"Set Syntax: Lua"
+			],
+			[
+				"syntax latex",
+				"Set Syntax: LaTeX"
+			],
+			[
+				"syntax css",
+				"Set Syntax: CSS"
+			],
+			[
+				"python",
+				"Set Syntax: Python"
+			],
+			[
+				"c++",
+				"Set Syntax: C++"
+			],
+			[
+				"c+",
+				"Set Syntax: C++"
+			],
+			[
+				"syntax plain",
+				"Set Syntax: Plain Text"
+			],
+			[
+				"syntax line",
+				"Set Syntax: Plain Text"
+			],
+			[
+				"syntax C#",
+				"Set Syntax: C#"
+			],
+			[
+				"syntax matlab",
+				"Set Syntax: MATLAB"
+			],
+			[
+				"task",
+				"Tasks: New document"
+			],
+			[
+				"",
+				"About"
+			],
+			[
+				"synax python",
+				"Set Syntax: Python"
+			],
+			[
+				"syntax py",
+				"Set Syntax: Python"
+			],
+			[
+				"lorem",
+				"Snippet: Lorem ipsum"
+			],
+			[
+				"syntax pyt",
+				"Set Syntax: Python"
+			],
+			[
+				"syntax java",
+				"Set Syntax: Java"
+			],
+			[
+				"syntax bat",
+				"Set Syntax: Batch File"
+			],
+			[
+				"syntax xml",
+				"Set Syntax: XML"
+			],
+			[
+				"print",
+				"Snippet: println"
+			],
+			[
+				"syntax sql",
+				"Set Syntax: SQL"
+			],
+			[
+				"prin",
+				"Snippet: println"
+			],
+			[
+				"syntax sq",
+				"Set Syntax: SQL"
+			],
+			[
+				"batch",
+				"Set Syntax: Batch File"
+			],
+			[
+				"pring",
+				"Preferences: Default File Settings"
+			],
+			[
+				"begin",
+				"Snippet: \\begin{}…\\end{}"
+			],
+			[
+				"begi",
+				"Snippet: \\begin{}…\\end{}"
+			],
+			[
+				"else",
+				"Snippet: else"
+			],
+			[
+				"if ",
+				"Snippet: if"
+			],
+			[
+				"set syntax java",
+				"Set Syntax: Java"
+			],
+			[
+				"set syn",
+				"Set Syntax: Java"
+			],
+			[
+				"pr",
+				"Snippet: print"
+			],
+			[
+				"pri",
+				"Snippet: print"
+			],
+			[
+				"java",
+				"Set Syntax: Java"
+			],
+			[
+				"syntax: java",
+				"Set Syntax: Java"
+			],
+			[
+				"set syntax: java",
+				"Set Syntax: Java"
+			],
+			[
+				"set syntax xml",
+				"Set Syntax: XML"
+			],
+			[
+				"labe",
+				"Set Syntax: LaTeX Beamer"
+			],
+			[
+				"equ",
+				"Snippet: Equation"
+			],
+			[
+				"set syntax: latex",
+				"Set Syntax: LaTeX"
+			],
+			[
+				"paragra",
+				"Snippet: Paragraph"
+			],
+			[
+				"beg",
+				"Snippet: \\begin{}…\\end{}"
+			],
+			[
+				"set syntax:java",
+				"Set Syntax: Java"
+			],
+			[
+				"item",
+				"Snippet: Itemize"
+			],
+			[
+				"itemize",
+				"Snippet: Itemize"
+			],
+			[
+				"sect",
+				"Snippet: Section"
+			],
+			[
+				"di",
+				"Snippet: Display Math — \\[ … \\]"
+			],
+			[
+				"displ",
+				"Snippet: Display Math — \\[ … \\]"
+			],
+			[
+				"\\[",
+				"Snippet: Display Math — \\[ … \\]"
+			],
+			[
+				"equation",
+				"Snippet: Equation"
+			],
+			[
+				"equat",
+				"Snippet: Equation"
+			],
+			[
+				"snippet: ",
+				"Snippet: Equation"
+			],
+			[
+				"set syntax: late",
+				"Set Syntax: LaTeX"
+			],
+			[
+				"Set Syntax:Ba",
+				"Set Syntax: Batch File"
+			],
+			[
+				"Set Syntax: Java",
+				"Set Syntax: Java"
+			],
+			[
+				"set syntax j",
+				"Set Syntax: Java"
+			],
+			[
+				"set syntax: b",
+				"Set Syntax: Batch File"
+			],
+			[
+				"side bar",
+				"View: Toggle Side Bar"
+			],
+			[
+				"side",
+				"View: Toggle Side Bar"
+			],
+			[
+				"set syntax",
+				"Set Syntax: Java"
+			],
+			[
+				"Fol",
+				"Project: Add Folder"
+			],
+			[
+				"Open",
+				"View: Toggle Open Files in Side Bar"
+			],
+			[
+				"Folder",
+				"Project: Add Folder"
+			],
+			[
+				"About",
+				"About"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 207.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": false,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Dokumenter/notes/fpga.txt",
+		"/C/Writing/cameramovement/cameramovement.txt",
+		"/C/Programming/c++/akari/18procjam/devlog/devlog.txt",
+		"/C/Dokumenter/notes/fagplan_2014h.txt",
+		"/C/Dokumenter/notes/fagplan_2015v.txt",
+		"/C/Applications/sublimetext2/Data/Packages/User/Preferences.sublime-settings",
+		"/C/Applications/sublimetext2/Data/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Applications/sublimetext2/Data/Packages/Default/Preferences.sublime-settings",
+		"/C/Dokumenter/notes/electronics.txt",
+		"/C/Dokumenter/notes/todo.todo",
+		"/C/Dokumenter/notes/sensorfusion.txt",
+		"/C/Dokumenter/ttk4145/test.go",
+		"/C/Programming/python/projecteuler/problem13.go",
+		"/C/Dokumenter/ttk4145/realtimelift/test.go",
+		"/C/Electronics/mpu6050/MPU6050.cpp",
+		"/C/Electronics/mpu6050/MPU6050.h",
+		"/C/Electronics/mpu6050/main.cpp",
+		"/C/Electronics/mpu6050/hmc5883l.cpp",
+		"/C/Electronics/mpu6050/hmc5883l.h",
+		"/C/Dokumenter/notes/inspiration.txt",
+		"/C/Dokumenter/notes/rekrutteringsdagen.txt",
+		"/C/Dokumenter/notes/physics.txt",
+		"/C/Dokumenter/notes/viktigeting.txt",
+		"/C/Dokumenter/notes/mathematics.txt",
+		"/C/Dokumenter/notes/graphics.txt",
+		"/C/Homepage/rekrutteringsdagen/application/views/home.php",
+		"/C/Homepage/rekrutteringsdagen/assets/css/style.css",
+		"/C/Dokumenter/scratch/derp.html",
+		"/C/Dokumenter/scratch/profile_model.php",
+		"/Z/rd/rekrutteringsdagen.sublime-project",
+		"/C/Homepage/rekrutteringsdagen/system/libraries/Email.php",
+		"/C/Homepage/rekrutteringsdagen/system/helpers/email_helper.php",
+		"/C/Programming/c++/quadcopter/src/mbed/gpio_api.h",
+		"/C/Applications/sublimetext2/Data/Packages/User/freshefarger2.tmTheme",
+		"/C/Applications/sublimetext2/Data/Packages/User/prose-color-scheme-dark.tmTheme",
+		"/C/Writing/Writing.sublime-project",
+		"/C/Dokumenter/misc/tabs/connect.txt",
+		"/C/Programming/c++/misc/importancesampling",
+		"/C/Applications/sublimetext2/Data/Packages/User/JSON.sublime-settings",
+		"/C/Applications/sublimetext2/Data/Packages/Theme - Awesome/Widget.sublime-settings",
+		"/C/Applications/sublimetext2/Data/Packages/Theme - Fresh/Widget.sublime-settings",
+		"/C/Applications/sublimetext2/Data/Settings/Session.sublime_session",
+		"/C/Programming/c++/illust/build.bat",
+		"/C/Programming/c++/illust/game_base.cpp",
+		"/C/Programming/c++/akari/akari.vcxproj",
+		"/C/Programming/c++/akari/00base/00base.vcxproj",
+		"/C/Programming/c++/illust/build/visual.sublime-workspace",
+		"/C/Programming/c++/illust/build/visual.sublime-project",
+		"/C/Programming/c++/illust/main.cpp",
+		"/C/Applications/sublimetext2/Scripts/python.bat",
+		"/C/Applications/sublimetext2/Scripts/pdflatex.bat",
+		"/C/Programming/c++/akari/akari.vcxproj.filters",
+		"/C/Programming/c++/akari/akari.vcxproj.user",
+		"/C/Programming/c++/akari/akari.sln",
+		"/C/Programming/c++/illust/test.cpp",
+		"/C/Applications/sublimetext2/Data/Packages/User/Akari.sublime-build",
+		"/C/Applications/sublimetext2/Data/Packages/User/PDFLatex.sublime-build",
+		"/C/Programming/c++/illust/game.h",
+		"/C/Programming/c++/akari/00base/main.cpp",
+		"/C/Programming/c++/akari/00base/game.cpp",
+		"/C/Programming/c++/akari/00base/game.h",
+		"/C/Dokumenter/tiø4258/eksamen/v2014.doc",
+		"/C/Dokumenter/notes/projects.txt",
+		"/C/Dokumenter/notes/fagplan_2014v.txt",
+		"/C/Dokumenter/notes/computers.txt",
+		"/C/Dokumenter/notes/algorithms.txt",
+		"/C/ApplicationsUser/skullmountain/src/source/sound.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/sound.h",
+		"/C/ApplicationsUser/skullmountain/src/source/skull.h",
+		"/C/ApplicationsUser/skullmountain/src/source/skull.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/main.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/hero.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/hero.h",
+		"/C/ApplicationsUser/skullmountain/src/source/grave.h",
+		"/C/ApplicationsUser/skullmountain/src/source/grave.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/game.h",
+		"/C/ApplicationsUser/skullmountain/src/source/game.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/enemy.h",
+		"/C/ApplicationsUser/skullmountain/src/source/enemy.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/dust.h",
+		"/C/ApplicationsUser/skullmountain/src/source/dust.cpp",
+		"/C/ApplicationsUser/skullmountain/src/source/collector.h",
+		"/C/ApplicationsUser/skullmountain/src/source/collector.cpp",
+		"/C/Writing/computeshaders/computeshaders.md",
+		"/C/Users/Kim/hs_err_pid7844.log",
+		"/C/Users/Kim/New document 1.2014_09_25_15_33_30.0.svg",
+		"/C/Programming/c++/akari/src/noise.cpp",
+		"/C/Programming/c++/akari/15ssao/convolution.fs",
+		"/C/Programming/c++/akari/15ssao/bg.vs",
+		"/C/Programming/c++/akari/15ssao/cube.fs",
+		"/C/Dokumenter/tiø4258/oving02/oving02.txt",
+		"/C/Programming/c++/akari/data/models/Cgtuts_Wood_Bench_OBJ.obj",
+		"/C/Homepage/lightbits/posts/procedural/procedural.md",
+		"/C/Programming/c++/akari/15ssao/floor.fs",
+		"/C/Programming/c++/akari/15ssao/floor.vs",
+		"/C/Programming/c++/akari/premake4.lua",
+		"/C/Programming/c++/akari/15ssao/bg.fs",
+		"/C/Programming/c++/akari/15ssao/cube.vs",
+		"/C/Programming/c++/akari/15ssao/bs.vs",
+		"/C/Programming/c++/akari/15ssao/game.cpp",
+		"/C/Programming/c++/akari/newproject.py",
+		"/C/Programming/c++/akari/ssao/premake4.lua",
+		"/C/Programming/c++/akari/00base/premake4.lua",
+		"/C/Applications/sublimetext2/Data/Packages/User/Distraction Free.sublime-settings",
+		"/C/Programming/c++/akari/src/fileio.h",
+		"/C/Programming/c++/akari/13tilemap/tilemap.fs",
+		"/C/Programming/c++/akari/13tilemap/tilemap.vs",
+		"/C/Programming/c++/akari/13tilemap/tilemap.h",
+		"/C/Programming/c++/akari/src/texture.cpp",
+		"/C/Dokumenter/notes/one_more_time.txt",
+		"/C/Dokumenter/notes/glassmarble.txt",
+		"/C/Programming/c++/akari/12menu/premake4.lua",
+		"/C/Programming/c++/akari/README.md",
+		"/C/Dokumenter/notes/entertainment.txt",
+		"/C/Dokumenter/ttk4115/helikopter/report/ttk4115_heli_lab_report.txt",
+		"/C/Dokumenter/tiø4258/oving01/oppgave1c_rev_2.txt",
+		"/C/Dokumenter/tiø4258/oving01/oving01_latex.tex",
+		"/C/Dokumenter/tiø4258/oving01/oppgave1c_rev.txt",
+		"/C/Dokumenter/tiø4258/oving01/oppgave1c.txt",
+		"/C/Programming/c++/quadcopter/src/mbed/TARGET_LPC1768/gpio_object.h",
+		"/C/Programming/c++/quadcopter/src/mbed/port_api.h",
+		"/C/Programming/c++/quadcopter/src/mbed/gpio_irq_api.h",
+		"/C/Programming/c++/quadcopter/src/mbed/CAN.h",
+		"/C/Programming/c++/akari/10terrain/generate.vs",
+		"/C/Programming/c++/akari/10terrain/generate.fs",
+		"/C/Homepage/lightbits/posts/android/android.md",
+		"/C/Writing/imgui/imgui.txt",
+		"/C/Dokumenter/misc/skattekort.txt"
+	],
+	"find":
+	{
+		"height": 101.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"alt+shift",
+			"Theme",
+			"/C/Programming/c++/illust",
+			"projects",
+			"lib",
+			"intro",
+			"Etter dette vil vi igangsette produksjon av et antall enheter, samt gjøre skreddersydde tilpasninger i programvaren etter bygningstype og andre omstendigheter. De fysiske beholderene vil produseres av et samarbeidsfirma, mens sensorsystemet vil produseres av et elektronikk-assembly firma, og integreres i beholderen før installasjon hos brukeren.",
+			"TODO",
+			"pdf",
+			"font-size",
+			"AddText",
+			"RenderText",
+			"text",
+			"12/12/12",
+			"1/1/1",
+			"01cube",
+			"gyro_sens",
+			"MPU6050",
+			"setclocksou",
+			"td",
+			"terrain",
+			"SOIL_load_image",
+			"terrain",
+			"..\\..\\",
+			"spherical",
+			"xz",
+			"SamplesPerPixel",
+			"buffer",
+			"pow",
+			"init_scene",
+			"toLuminance",
+			"lum_avg",
+			"to_luminance",
+			"apply_tonemap",
+			"log_avg_lum",
+			"std::",
+			"static ",
+			"on_",
+			"set_order_active",
+			"LIFT_STATE",
+			"is_at_order_up",
+			"is_at_order_down",
+			"lift_position",
+			"h3",
+			"books",
+			"Arne",
+			"compiler",
+			"==================================",
+			"5",
+			"http://folk.ntnu.no/simeh/projects/",
+			"outColor",
+			"vertColor",
+			"vBC",
+			":\n",
+			"vertTexel",
+			"vertPosition",
+			"vertTexel",
+			"light0Color",
+			"light0Position",
+			"outColor",
+			"5",
+			"& ",
+			"tonemap",
+			"double",
+			"example01-canvas",
+			"@",
+			"background",
+			"keyword",
+			"background",
+			"e0daab",
+			"EFE9B7",
+			"E0DAAB",
+			"background",
+			"std::min",
+			"std::max",
+			"std::fmin",
+			"std::fmax",
+			"std::min",
+			"std::max",
+			"uint",
+			"res",
+			"glut",
+			"u_bar + del_u",
+			"u_bar",
+			"])",
+			"bigNumber",
+			"c",
+			"coefficients",
+			"dword",
+			"uint16",
+			"img",
+			"#menu",
+			")",
+			"(",
+			"2f",
+			"read_material",
+			"Material",
+			"read_material",
+			"materials",
+			"indices",
+			"Vertex",
+			"vertices",
+			"pmx.",
+			"read_rgb",
+			"ParseException",
+			"read",
+			"read_int",
+			"file",
+			"bytearray",
+			"bufferedw",
+			"buffered",
+			"999999",
+			"entity.name.function",
+			"function",
+			"define",
+			"keyword.control.import",
+			"using",
+			"keyword.control",
+			"preproce",
+			"prepro",
+			"meta.pre",
+			"<string>.*<</string>",
+			"<string>.*\\<</string>",
+			"<string>.*?</string>",
+			"<string>.*></string>",
+			"<string>.*<</string>",
+			"<string><",
+			"string"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"float",
+			"glcanvas",
+			"<i>@",
+			"(u_bar + del_u)",
+			"img class=\"centered-image\"",
+			".menu",
+			"",
+			"282828",
+			"333333",
+			"282828",
+			"grid",
+			"0.9 0.6 0.5",
+			"0.3 0.7 0.8",
+			"1.0 1.0 1.0",
+			"Bitmap",
+			"num",
+			"s",
+			"cells",
+			"F25050",
+			"F22E2E",
+			"",
+			"Theme - Light",
+			"settings",
+			"list",
+			"x"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 2,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "ttk4145.sublime-project",
+					"settings":
+					{
+						"buffer_size": 316,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								310,
+								310
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "exercises/exercise1/exercise1.txt",
+					"settings":
+					{
+						"buffer_size": 6383,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6383,
+								6383
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1367.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "project/readme.md",
+					"settings":
+					{
+						"buffer_size": 716,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								193,
+								193
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "exercises/exercise1/helloworld_go.go",
+					"settings":
+					{
+						"buffer_size": 866,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								866,
+								866
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 29.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": false,
+	"output.exec":
+	{
+		"height": 169.0
+	},
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"",
+				"/C/Dokumenter/tdt4102/googlecodejam/idi-open-2012-b.cpp"
+			],
+			[
+				"idi",
+				"/C/Dokumenter/tdt4102/googlecodejam/idi-open-2012-b.cpp"
+			],
+			[
+				"physics",
+				"emitter/physics.cpp"
+			],
+			[
+				"p",
+				"/C/Programming/Java/HelloWorlC/Person.java"
+			],
+			[
+				"hw",
+				"/C/Programming/Java/HelloWorlC/HelloWorld.java"
+			],
+			[
+				"cvl",
+				"/C/Dokumenter/Latex/CVlatex.tex"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+			[
+				"",
+				"/C/Writing/Writing.sublime-project"
+			],
+			[
+				"dngnrtr",
+				"/C/Programming/Java/DungeonGenerator/dungeon_generator.sublime-project"
+			],
+			[
+				"Hello world",
+				"/C/Programming/Java/HelloWorlC/HelloWorld.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 169.0,
+	"status_bar_visible": false
+}
