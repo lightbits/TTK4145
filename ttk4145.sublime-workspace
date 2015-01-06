@@ -412,18 +412,18 @@
 			}
 		},
 		{
-			"file": "project/readme.md",
+			"file": "exercises/exercise1/helloworld_go.go",
 			"settings":
 			{
-				"buffer_size": 716,
+				"buffer_size": 1063,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "exercises/exercise1/helloworld_go.go",
+			"file": "exercises/exercise1/helloworld_python.py",
 			"settings":
 			{
-				"buffer_size": 866,
+				"buffer_size": 553,
 				"line_ending": "Windows"
 			}
 		}
@@ -772,6 +772,7 @@
 	},
 	"file_history":
 	[
+		"/C/Dokumenter/ttk4145/project/readme.md",
 		"/C/Dokumenter/notes/fpga.txt",
 		"/C/Writing/cameramovement/cameramovement.txt",
 		"/C/Programming/c++/akari/18procjam/devlog/devlog.txt",
@@ -898,8 +899,7 @@
 		"/C/Programming/c++/akari/10terrain/generate.vs",
 		"/C/Programming/c++/akari/10terrain/generate.fs",
 		"/C/Homepage/lightbits/posts/android/android.md",
-		"/C/Writing/imgui/imgui.txt",
-		"/C/Dokumenter/misc/skattekort.txt"
+		"/C/Writing/imgui/imgui.txt"
 	],
 	"find":
 	{
@@ -1087,7 +1087,7 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -1147,23 +1147,25 @@
 				},
 				{
 					"buffer": 2,
-					"file": "project/readme.md",
+					"file": "exercises/exercise1/helloworld_go.go",
 					"settings":
 					{
-						"buffer_size": 716,
+						"buffer_size": 1063,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								193,
-								193
+								1041,
+								1041
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Markdown/Markdown.tmLanguage"
+							"syntax": "Packages/Go/Go.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1173,25 +1175,23 @@
 				},
 				{
 					"buffer": 3,
-					"file": "exercises/exercise1/helloworld_go.go",
+					"file": "exercises/exercise1/helloworld_python.py",
 					"settings":
 					{
-						"buffer_size": 866,
+						"buffer_size": 553,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								866,
-								866
+								97,
+								97
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Go/Go.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"syntax": "Packages/Python/Python.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
