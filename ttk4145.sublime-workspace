@@ -399,7 +399,7 @@
 			"file": "ttk4145.sublime-project",
 			"settings":
 			{
-				"buffer_size": 316,
+				"buffer_size": 277,
 				"line_ending": "Unix"
 			}
 		},
@@ -423,8 +423,16 @@
 			"file": "exercises/exercise1/helloworld_go.go",
 			"settings":
 			{
-				"buffer_size": 866,
-				"line_ending": "Windows"
+				"buffer_size": 1063,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "exercises/exercise1/helloworld_c.c",
+			"settings":
+			{
+				"buffer_size": 692,
+				"line_ending": "Unix"
 			}
 		}
 	],
@@ -772,6 +780,9 @@
 	},
 	"file_history":
 	[
+		"/home/youmu/Documents/ttk4145/freshefarger2.tmTheme",
+		"/home/youmu/Documents/ttk4145/misc/emacs.sh",
+		"/home/youmu/Documents/ttk4145/misc/emacs.bat",
 		"/C/Dokumenter/notes/fpga.txt",
 		"/C/Writing/cameramovement/cameramovement.txt",
 		"/C/Programming/c++/akari/18procjam/devlog/devlog.txt",
@@ -896,10 +907,7 @@
 		"/C/Programming/c++/quadcopter/src/mbed/gpio_irq_api.h",
 		"/C/Programming/c++/quadcopter/src/mbed/CAN.h",
 		"/C/Programming/c++/akari/10terrain/generate.vs",
-		"/C/Programming/c++/akari/10terrain/generate.fs",
-		"/C/Homepage/lightbits/posts/android/android.md",
-		"/C/Writing/imgui/imgui.txt",
-		"/C/Dokumenter/misc/skattekort.txt"
+		"/C/Programming/c++/akari/10terrain/generate.fs"
 	],
 	"find":
 	{
@@ -917,6 +925,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"cc6633",
+			"string",
 			"alt+shift",
 			"Theme",
 			"/C/Programming/c++/illust",
@@ -1042,9 +1052,7 @@
 			"<string>.*\\<</string>",
 			"<string>.*?</string>",
 			"<string>.*></string>",
-			"<string>.*<</string>",
-			"<string><",
-			"string"
+			"<string>.*<</string>"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1087,7 +1095,7 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 0,
 			"sheets":
 			[
 				{
@@ -1095,15 +1103,15 @@
 					"file": "ttk4145.sublime-project",
 					"settings":
 					{
-						"buffer_size": 316,
+						"buffer_size": 277,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								310,
-								310
+								169,
+								169
 							]
 						],
 						"settings":
@@ -1112,7 +1120,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 51.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1176,20 +1184,48 @@
 					"file": "exercises/exercise1/helloworld_go.go",
 					"settings":
 					{
-						"buffer_size": 866,
+						"buffer_size": 1063,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								866,
-								866
+								0,
+								0
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/Go/Go.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "exercises/exercise1/helloworld_c.c",
+					"settings":
+					{
+						"buffer_size": 692,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
