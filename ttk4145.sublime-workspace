@@ -399,7 +399,7 @@
 			"file": "ttk4145.sublime-project",
 			"settings":
 			{
-				"buffer_size": 316,
+				"buffer_size": 277,
 				"line_ending": "Unix"
 			}
 		},
@@ -416,14 +416,6 @@
 			"settings":
 			{
 				"buffer_size": 1063,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "exercises/exercise1/helloworld_python.py",
-			"settings":
-			{
-				"buffer_size": 553,
 				"line_ending": "Windows"
 			}
 		}
@@ -772,7 +764,13 @@
 	},
 	"file_history":
 	[
+<<<<<<< HEAD
 		"/C/Dokumenter/ttk4145/project/readme.md",
+=======
+		"/home/youmu/Documents/ttk4145/freshefarger2.tmTheme",
+		"/home/youmu/Documents/ttk4145/misc/emacs.sh",
+		"/home/youmu/Documents/ttk4145/misc/emacs.bat",
+>>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 		"/C/Dokumenter/notes/fpga.txt",
 		"/C/Writing/cameramovement/cameramovement.txt",
 		"/C/Programming/c++/akari/18procjam/devlog/devlog.txt",
@@ -897,9 +895,13 @@
 		"/C/Programming/c++/quadcopter/src/mbed/gpio_irq_api.h",
 		"/C/Programming/c++/quadcopter/src/mbed/CAN.h",
 		"/C/Programming/c++/akari/10terrain/generate.vs",
+<<<<<<< HEAD
 		"/C/Programming/c++/akari/10terrain/generate.fs",
 		"/C/Homepage/lightbits/posts/android/android.md",
 		"/C/Writing/imgui/imgui.txt"
+=======
+		"/C/Programming/c++/akari/10terrain/generate.fs"
+>>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 	],
 	"find":
 	{
@@ -917,6 +919,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"cc6633",
+			"string",
 			"alt+shift",
 			"Theme",
 			"/C/Programming/c++/illust",
@@ -1042,9 +1046,7 @@
 			"<string>.*\\<</string>",
 			"<string>.*?</string>",
 			"<string>.*></string>",
-			"<string>.*<</string>",
-			"<string><",
-			"string"
+			"<string>.*<</string>"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1087,7 +1089,11 @@
 	"groups":
 	[
 		{
+<<<<<<< HEAD
 			"selected": 3,
+=======
+			"selected": 0,
+>>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 			"sheets":
 			[
 				{
@@ -1095,15 +1101,15 @@
 					"file": "ttk4145.sublime-project",
 					"settings":
 					{
-						"buffer_size": 316,
+						"buffer_size": 277,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								310,
-								310
+								169,
+								169
 							]
 						],
 						"settings":
@@ -1112,7 +1118,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 51.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1178,20 +1184,57 @@
 					"file": "exercises/exercise1/helloworld_python.py",
 					"settings":
 					{
+<<<<<<< HEAD
 						"buffer_size": 553,
+=======
+						"buffer_size": 1063,
+>>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
+<<<<<<< HEAD
 								97,
 								97
+=======
+								0,
+								0
+>>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/Python/Python.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "exercises/exercise1/helloworld_c.c",
+					"settings":
+					{
+						"buffer_size": 692,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
