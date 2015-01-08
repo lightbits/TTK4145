@@ -10,7 +10,6 @@
 	],
 	"settings":
 	{
-		"color_scheme": "./freshefarger2.tmTheme",
 		"draw_centered": true,
 		"font_size": 10,
 		"gutter": true,

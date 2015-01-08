@@ -396,18 +396,18 @@
 	"buffers":
 	[
 		{
-			"file": "ttk4145.sublime-project",
+			"file": "exercises/exercise1/exercise1.md",
 			"settings":
 			{
-				"buffer_size": 277,
-				"line_ending": "Unix"
+				"buffer_size": 6488,
+				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "exercises/exercise1/exercise1.txt",
+			"file": "ttk4145.sublime-project",
 			"settings":
 			{
-				"buffer_size": 6383,
+				"buffer_size": 232,
 				"line_ending": "Windows"
 			}
 		},
@@ -416,6 +416,14 @@
 			"settings":
 			{
 				"buffer_size": 1063,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "project/main.go",
+			"settings":
+			{
+				"buffer_size": 790,
 				"line_ending": "Windows"
 			}
 		}
@@ -764,20 +772,19 @@
 	},
 	"file_history":
 	[
-<<<<<<< HEAD
+		"/C/Applications/sublimetext2/Data/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Dokumenter/ttk4145/project/test.go",
+		"/C/Dokumenter/ttk4145/project/udp/udp.go",
+		"/C/Dokumenter/ttk4145/exercises/exercise1/helloworld_python.py",
+		"/C/Dokumenter/ttk4145/exercises/exercise1/helloworld_c.c",
+		"/C/Dokumenter/ttk4145/ttk4145.sublime-project",
+		"/C/Applications/sublimetext2/Data/Packages/User/Preferences.sublime-settings",
 		"/C/Dokumenter/ttk4145/project/readme.md",
-=======
-		"/home/youmu/Documents/ttk4145/freshefarger2.tmTheme",
-		"/home/youmu/Documents/ttk4145/misc/emacs.sh",
-		"/home/youmu/Documents/ttk4145/misc/emacs.bat",
->>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 		"/C/Dokumenter/notes/fpga.txt",
 		"/C/Writing/cameramovement/cameramovement.txt",
 		"/C/Programming/c++/akari/18procjam/devlog/devlog.txt",
 		"/C/Dokumenter/notes/fagplan_2014h.txt",
 		"/C/Dokumenter/notes/fagplan_2015v.txt",
-		"/C/Applications/sublimetext2/Data/Packages/User/Preferences.sublime-settings",
-		"/C/Applications/sublimetext2/Data/Packages/Default/Default (Windows).sublime-keymap",
 		"/C/Applications/sublimetext2/Data/Packages/Default/Preferences.sublime-settings",
 		"/C/Dokumenter/notes/electronics.txt",
 		"/C/Dokumenter/notes/todo.todo",
@@ -892,16 +899,7 @@
 		"/C/Dokumenter/tiø4258/oving01/oppgave1c.txt",
 		"/C/Programming/c++/quadcopter/src/mbed/TARGET_LPC1768/gpio_object.h",
 		"/C/Programming/c++/quadcopter/src/mbed/port_api.h",
-		"/C/Programming/c++/quadcopter/src/mbed/gpio_irq_api.h",
-		"/C/Programming/c++/quadcopter/src/mbed/CAN.h",
-		"/C/Programming/c++/akari/10terrain/generate.vs",
-<<<<<<< HEAD
-		"/C/Programming/c++/akari/10terrain/generate.fs",
-		"/C/Homepage/lightbits/posts/android/android.md",
-		"/C/Writing/imgui/imgui.txt"
-=======
-		"/C/Programming/c++/akari/10terrain/generate.fs"
->>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
+		"/C/Programming/c++/quadcopter/src/mbed/gpio_irq_api.h"
 	],
 	"find":
 	{
@@ -919,8 +917,6 @@
 		"case_sensitive": false,
 		"find_history":
 		[
-			"cc6633",
-			"string",
 			"alt+shift",
 			"Theme",
 			"/C/Programming/c++/illust",
@@ -1046,7 +1042,9 @@
 			"<string>.*\\<</string>",
 			"<string>.*?</string>",
 			"<string>.*></string>",
-			"<string>.*<</string>"
+			"<string>.*<</string>",
+			"<string><",
+			"string"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1089,27 +1087,54 @@
 	"groups":
 	[
 		{
-<<<<<<< HEAD
-			"selected": 3,
-=======
 			"selected": 0,
->>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "ttk4145.sublime-project",
+					"file": "exercises/exercise1/exercise1.md",
 					"settings":
 					{
-						"buffer_size": 277,
+						"buffer_size": 6488,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								169,
-								169
+								1193,
+								1193
+							]
+						],
+						"settings":
+						{
+							"rulers":
+							[
+							],
+							"syntax": "Packages/Markdown/Markdown.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 354.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "ttk4145.sublime-project",
+					"settings":
+					{
+						"buffer_size": 232,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								206,
+								206
 							]
 						],
 						"settings":
@@ -1118,35 +1143,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 51.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "exercises/exercise1/exercise1.txt",
-					"settings":
-					{
-						"buffer_size": 6383,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								6383,
-								6383
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1367.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1163,8 +1160,8 @@
 						"selection":
 						[
 							[
-								1041,
-								1041
+								378,
+								378
 							]
 						],
 						"settings":
@@ -1174,65 +1171,30 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 160.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 3,
-					"file": "exercises/exercise1/helloworld_python.py",
+					"file": "project/main.go",
 					"settings":
 					{
-<<<<<<< HEAD
-						"buffer_size": 553,
-=======
-						"buffer_size": 1063,
->>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
+						"buffer_size": 790,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-<<<<<<< HEAD
-								97,
-								97
-=======
-								0,
-								0
->>>>>>> 16d50675caa83664ac3e8770c8b6c84235ced130
+								634,
+								634
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "exercises/exercise1/helloworld_c.c",
-					"settings":
-					{
-						"buffer_size": 692,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C.tmLanguage",
+							"syntax": "Packages/Go/Go.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
@@ -1340,7 +1302,7 @@
 	"show_minimap": false,
 	"show_open_files": false,
 	"show_tabs": true,
-	"side_bar_visible": false,
+	"side_bar_visible": true,
 	"side_bar_width": 169.0,
 	"status_bar_visible": false
 }

@@ -2,30 +2,33 @@
 ===================
 First, some terminology.
 
-Concurrency: 
+* Concurrency: 
     A way to structure your program into tasks that can be performed independently. 
     For example: Handling mouse and keyboard input such that the user can use both at the same time.
 
-Parallellism: 
+* Parallellism: 
     Executing multiple computations at the same time.
     For example: a vector dot product.
 
-Process:
+* Process:
     A computer program being executed.
 
-Thread:
+* Thread:
     Multiple threads can exist within the same process, and share resources.
 
-Concurrency vs parallelism:
+* Concurrency vs parallelism:
     A concurrent program can be run on a single-core machine, for example by interleaving processing time between the different tasks. On the other hand, a parallel program can _not_ be run on a single-core machine. Parallelism is one way of implementing concurrency.
 
 
 We like concurrent execution for a couple of reasons
-===================
+-------------------------
 *   Speed:
     It is easier to make processing units that have more, but less powerful, cores rather than a single, very powerful, core. Utilizing the full capabilities of your processor requires programs to be designed in such a way that they perform tasks in parallel. 
 
+    ![](test.png)
+    
     Example: Fragment shader programs in GPUs are small programs that are executed at the same time for each pixel being output to the screen. They allow you to make cool effects that run really fast!
+
 
 *   Multitasking: 
     Allow continued use of one application while others are running in the background. 
@@ -44,39 +47,39 @@ We like concurrent execution for a couple of reasons
 
 
 But it has some drawbacks
-===================
+-------------------------
 It is more complex. Non-intuitive behaviour, data races, synchronization, etc... all require much thought and consideration. Ensuring that a concurrent program will never have a data race or a deadlock can be difficult.
 
 
 More terminology
-===================
-Process: 
+-------------------------
+* Process: 
     Provides resources to run a program. Resources are allocated by the OS, and include a virtual memory address space, environment variables, windows, executable code and at least one executing thread. Typically preemtively multitasked.
 
-Threads:
+* Threads:
     A thing which can be scheduled by the OS to run code of a process. All threads of the same process share its virtual address space and system resources. Can be interrupted by the OS to allow a different thread to run. Can run in parallel with other threads on multiple processors.
 
-Green threads:
+* Green threads:
     A thread that lives in userspace (meaning it cannot access memory of other processes), and is not scheduled by the OS. Cannot take advantage of multiple CPUs.
 
-Fibers:
+* Fibers:
     OS managed threads that co-operatively multitask (meaning the threads themselves will relinquish control to let other threads run).
 
-Atomic:
+* Atomic:
     All but one thread's execution halts while a thread performs an atomic operation. This essentially makes an operation - which may be multiple instructions long - look like a single machine instruction. 
 
     This can work well on single-core machines, since it prevents other threads from doing stuff they shouldn't be doing. But it's poor for performance on multi-core machines, since all cores but one are prevented from doing work during an atomic operation!
 
-Locking:
+* Locking:
     A thread's execution is halted if it tries to access data that is currently in use by a different thread. When the thread locking the data releases its lock, the thread can continue. This is different from atomics in that only threads that wish to access the data will halt.
 
-C
-===================
-pthread_create() creates a native thread (that is, a thread that is scheduled by the OS and that can run on a different core).
+C: pthread_create()
+-------------------------
+This creates a native thread (that is, a thread that is scheduled by the OS and that can run on a different core).
 
-Python
-===================
-threading.Thread() creates a green thread. Python does support native OS threads, but the global interpreter lock (GIL) prevents this. Each thread that wants to run some Python code must wait for the GIL to be released by the other thread using it. Therefore, if you want to perform some heavy python computation in one thread, and still run other code, python threads will not help. The other threads will block while waiting to acquire the GIL.
+Python: threading.Thread()
+-------------------------
+This creates a green thread. Python does support native OS threads, but the global interpreter lock (GIL) prevents this. Each thread that wants to run some Python code must wait for the GIL to be released by the other thread using it. Therefore, if you want to perform some heavy python computation in one thread, and still run other code, python threads will not help. The other threads will block while waiting to acquire the GIL.
 
 The exception to this is in C modules. C extensions are .c files that you can import as modules in your Python program. They define macros that release or regain control of the GIL, respectively. For example:
 
@@ -86,8 +89,8 @@ The exception to this is in C modules. C extensions are .c files that you can im
 
 will release the GIL before performing the blocking operation, to allow other Python code to run while performing it, and retake it afterwards.
 
-Go
-===================
+Go: goroutine
+-------------------------
 Threading in Go is done through goroutines. These are multiplexed/timesliced onto OS threads as required. They are not necessarily native threads, but they are not as restrictive as Pythons threading (with GIL). If a goroutine blocks, other goroutines can keep running.
 
 Setting GOMAXPROCS > 1 allows Go's scheduler to use more than one OS thread (and then perhaps more than one CPU).
