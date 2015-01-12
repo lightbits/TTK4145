@@ -35,7 +35,5 @@ func main() {
     // We'll come back to using channels in Exercise 2. For now: Sleep.
     time.Sleep(1 * time.Second)
 
-    // This prints some ~random value between -1 mill and + 1 mill. This is because the
-    // threads can be interrupted during execution to let other threads run.
     Printf("%d", i)
 }

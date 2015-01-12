@@ -27,13 +27,6 @@ int main() {
     pthread_join(thread1, NULL);
     pthread_join(thread2, NULL);
 
-    // This is more interesting. These are native threads, and as such they
-    // can be interrupted down on the lowest level. For instance, in executing
-    // thread1, the thread can be interrupted right after fetching the current value
-    // of i from memory, then thread2 decrements i, and thread1 finishes
-    // by incrementing i and storing in back in memory. But thread1 worked on an
-    // old value, instead of the new value that thread2 computed.
-
     // Example:
     // i = 0
     // thread1 fetches i (i = 0)
