@@ -6,7 +6,7 @@ package main
 import (
     . "fmt"     // Using '.' to avoid prefixing functions with their package names
                 //   This is probably not a good idea for large projects...
-    "runtime"
+    // "runtime"
     "time"
 )
 
@@ -25,7 +25,7 @@ func thread2() {
 }
 
 func main() {
-    runtime.GOMAXPROCS(runtime.NumCPU())    // I guess this is a hint to what GOMAXPROCS does...
+    // runtime.GOMAXPROCS(runtime.NumCPU())    // I guess this is a hint to what GOMAXPROCS does...
                                             // Try doing the exercise both with and without it!
     
     go thread1()
