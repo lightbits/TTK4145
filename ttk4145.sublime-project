@@ -1,17 +1,18 @@
 {
-	"folders":
-	[
-		{
-			"path": "/C/Dokumenter/ttk4145"
-		}
-	],
-	"settings":
-	{
-		"draw_centered": true,
-		"font_size": 10,
-		"gutter": true,
-		"line_numbers": true,
-		"word_wrap": true,
-		"wrap_width": 100
-	}
+    "folders":
+    [
+        {
+            "path": "./"
+        }
+    ],
+    "settings":
+    {
+        "draw_centered": true,
+        "drag_text": false,
+        "gutter": true,
+        "line_numbers": true,
+        "word_wrap": true,
+        "wrap_width": 100,
+        "color_scheme": "./freshefarger2.tmTheme"
+    }
 }
