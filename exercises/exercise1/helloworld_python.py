@@ -7,10 +7,19 @@ def thread1Func():
     for k in range(1000000):
         i += 1
 
+        # LOAD EAX i
+        # ----------
+        # INCR EAX
+        # PUSH EAX &i
+
 def thread2Func():
     global i
     for k in range(1000000):
         i -= 1
+
+        # LOAD EAX i
+        # DECR EAX
+        # PUSH EAX &i
 
 def main():
     global i

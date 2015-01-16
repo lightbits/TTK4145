@@ -27,16 +27,6 @@ int main() {
     pthread_join(thread1, NULL);
     pthread_join(thread2, NULL);
 
-    // Example:
-    // i = 0
-    // thread1 fetches i (i = 0)
-    // thread2 interrupts thread1
-    // thread2 fetches i (i = 0)
-    // thread2 i-- (i = 0 - 1)
-    // thread2 write i (i = -1)
-    // thread1 i++ (i = 0 + 1)
-    // thread1 write (i = +1) !!
-
     printf("%d\n", i);
 
     // On my machine I often get values above 1 000 000 when running this program.
