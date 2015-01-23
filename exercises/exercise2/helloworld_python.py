@@ -1,0 +1,46 @@
+from threading import Thread
+from threading import Lock
+
+lock_i = Lock()
+i = 0
+
+def thread1Func():
+    global i
+    global lock_i
+    for k in range(1000000):
+        lock_i.acquire()
+        i += 1
+        lock_i.release()
+
+        # LOAD EAX i
+        # ----------
+        # INCR EAX
+        # PUSH EAX &i
+
+def thread2Func():
+    global i
+    global lock_i
+    for k in range(1000000):
+        lock_i.acquire()
+        i -= 1
+        lock_i.release()
+
+        # LOAD EAX i
+        # DECR EAX
+        # PUSH EAX &i
+
+def main():
+    global i
+    thread1 = Thread(target = thread1Func, args = (),)
+    thread2 = Thread(target = thread2Func, args = (),)
+    thread1.start()
+    thread2.start()
+    
+    thread1.join()
+    thread2.join()
+
+    # This also becomes a somewhat random number, since the threads
+    # can be interrupted when Python (?) finds it fit.
+    print(i)
+
+main()
