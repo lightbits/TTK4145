@@ -16,7 +16,7 @@ func thread1(ch chan int, done chan int) {
 }
 
 func thread2(ch chan int, done chan int) {
-    for k := 0; k < 1000; k++ {
+    for k := 0; k < 1001; k++ {
         i := <- ch
         i--
         ch <- i
