@@ -1,3 +1,20 @@
+Communicate with lift
+---------------------
+The lift interface is a collection of C files. Since we're programming in Go, we need to export the relevant functions to Go. It turns out that this is super easy. Go lets you specify flags to the C compiler in your source files, which means that we can specify that we wish to statically link with the lift library.
+
+Simply write
+
+    // #cgo LDFLAGS: -l ./driver/lift_driver.a
+    // #include <elev.h>
+    import "C"
+
+in your Go source code, and compile as usual. The functions declared in lift.h are now available for calling in Go as
+
+    C.enum_elev_motor_direction_t dir = C.DIRN_DOWN;
+    C.elev_set_motor_direction(dir)
+
+Design
+---------------------
 Use an event queue of messages to send to each elevator in the network.
 
                     Acknowledged
