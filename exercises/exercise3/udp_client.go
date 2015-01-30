@@ -41,7 +41,7 @@ func main() {
     }
 
     // Send data to this address:port (broadcast address)
-    remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:30000")
+    remote, err := net.ResolveUDPAddr("udp", "127.0.0.1:30000")
     if err != nil {
         log.Fatal(err)
     }
