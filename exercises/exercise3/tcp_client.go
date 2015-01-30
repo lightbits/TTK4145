@@ -48,6 +48,13 @@ func main() {
     done := make(chan bool)
     go ListenForConnections(done)
 
+    // Fixed size message sending: Use port 34933 in remote
+    // msg := "Connect to: 129.241.187.144:12345"
+    // data := make([]byte, 1024)
+    // copy(data[:], msg)
+    // bytes_sent, err := conn.Write(data)
+
+    // Variable size messages, use port 33546 in remote
     bytes_sent, err := conn.Write([]byte("Connect to: 129.241.187.144:12345"))
     conn.Write([]byte{0})
     if err != nil {
