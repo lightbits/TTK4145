@@ -4,14 +4,21 @@
 #include <sys/socket.h>
 
 #define RECV_SIZE 4096
-static int g_socket;
-// static int g_preferred_listen_port;
-
-int
-net_initialize(uint16 listen_port)
+#define DEFAULT_LISTEN_PORT 20012
+struct Network
 {
-    g_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (g_socket < 0)
+    int socket;
+    bool initialized;
+};
+
+global_variable Network network;
+
+bool
+net_init(uint16 listen_port)
+{
+    network.initialized = false;
+    network.socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (network.socket < 0)
     {
         printf("Failed to create a socket\n");
         return FAIL;
@@ -22,11 +29,13 @@ net_initialize(uint16 listen_port)
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(listen_port);
 
-    if (bind(g_socket, (struct sockaddr *)&address, sizeof(address)) < 0)
+    if (bind(network.socket, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
         printf("Failed to bind socket\n");
         return FAIL;
     }
+
+    network.initialized = true;
 
     return OK;
 }
@@ -34,6 +43,13 @@ net_initialize(uint16 listen_port)
 int
 net_send(struct NetAddress *destination, char *data, int length)
 {
+    if (!network.initialized)
+    {
+        printf("Warning: Using default listen port.\n")
+        if (!net_init(DEFAULT_LISTEN_PORT))
+            return 0;
+    }
+
     struct sockaddr_in address;
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(
@@ -43,17 +59,24 @@ net_send(struct NetAddress *destination, char *data, int length)
         (destination->ip3));
     address.sin_port = htons(destination->port);
 
-    return sendto(g_socket, data, length, 0,
+    return sendto(network.socket, data, length, 0,
            (struct sockaddr*)&address, sizeof(struct sockaddr_in));
 }
 
 int
 net_read(char *data, int max_size, struct NetAddress *sender)
 {
+    if (!network.initialized)
+    {
+        printf("Warning: Using default listen port.\n")
+        if (!net_init(DEFAULT_LISTEN_PORT))
+            return 0;
+    }
+
     struct sockaddr_in from;
     int from_length = sizeof(from);
     int bytes_read = recvfrom(
-        g_socket, data, max_size, 0,
+        network.socket, data, max_size, 0,
         (struct sockaddr*)&from, &from_length);
     if (bytes_read <= 0)
         return 0;
