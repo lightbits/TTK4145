@@ -15,14 +15,14 @@
 #define false  0
 #define true   1
 
-struct NetAddress
+typedef struct
 {
     uint8 ip0, ip1, ip2, ip3;
     uint16 port;
-};
+} NetAddress;
 
 bool net_init(uint16 listen_port);
-int  net_send(struct NetAddress *destination, char *data, int length);
-int  net_read(char *data, int max_size, struct NetAddress *sender);
+int  net_send(NetAddress *destination, char *data, int length);
+int  net_read(char *data, int max_size, NetAddress *sender);
 
 #endif

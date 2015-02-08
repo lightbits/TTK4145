@@ -5,11 +5,11 @@
 
 #define RECV_SIZE 4096
 #define DEFAULT_LISTEN_PORT 20012
-struct Network
+typedef struct
 {
     int socket;
     bool initialized;
-};
+} Network;
 
 global_variable Network network;
 
@@ -41,11 +41,11 @@ net_init(uint16 listen_port)
 }
 
 int
-net_send(struct NetAddress *destination, char *data, int length)
+net_send(NetAddress *destination, char *data, int length)
 {
     if (!network.initialized)
     {
-        printf("Warning: Using default listen port.\n")
+        printf("Warning: Using default listen port.\n");
         if (!net_init(DEFAULT_LISTEN_PORT))
             return 0;
     }
@@ -59,16 +59,22 @@ net_send(struct NetAddress *destination, char *data, int length)
         (destination->ip3));
     address.sin_port = htons(destination->port);
 
-    return sendto(network.socket, data, length, 0,
-           (struct sockaddr*)&address, sizeof(struct sockaddr_in));
+    int bytes_sent = sendto(network.socket, data, length, 0,
+        (struct sockaddr*)&address, sizeof(struct sockaddr_in));
+    
+    printf("Sent %d bytes to %d.%d.%d.%d:%d\n",
+            bytes_sent, destination->ip0, destination->ip1,
+            destination->ip2, destination->ip3, destination->port);
+
+    return bytes_sent;
 }
 
 int
-net_read(char *data, int max_size, struct NetAddress *sender)
+net_read(char *data, int max_size, NetAddress *sender)
 {
     if (!network.initialized)
     {
-        printf("Warning: Using default listen port.\n")
+        printf("Warning: Using default listen port.\n");
         if (!net_init(DEFAULT_LISTEN_PORT))
             return 0;
     }

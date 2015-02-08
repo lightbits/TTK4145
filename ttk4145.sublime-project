@@ -12,7 +12,6 @@
         "gutter": true,
         "line_numbers": true,
         "word_wrap": true,
-        "color_scheme": "Packages/User/freshefarger3.tmTheme",
         "wrap_width": 100
     }
 }
