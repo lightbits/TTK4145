@@ -2,146 +2,168 @@ package main
 
 import (
     "log"
-    "net"
-    "time"
+    "encoding/binary"
+    "bytes"
 )
 
-type Message struct {
-    Sender *net.UDPAddr
-    Data string
+type order_type int
+const (
+    order_up   = 1
+    order_out  = 0
+    order_down = -1
+)
+
+type lift_id struct {
+    IPAddress uint32
+    Port      uint16
 }
 
-type Connection struct {
-    Address *net.UDPAddr
+type order struct {
+    FromFloor int
+    ToFloor   int
+    Type      order_type
+    TakenBy   lift_id
 }
 
-func Listen(done chan bool, 
-    connection_channel chan Connection,
-    message_channel chan Message) {
-    // The address we wish to listen to
-    local, err := net.ResolveUDPAddr("udp", ":20012")
-    if err != nil {
-        log.Fatal(err)
-    }
+type client_update struct {
+    Request    []order // Do we specify ourselves in the TakenBy field?
+                       // Maybe that would work. The master would then
+                       // see whether or not that is allowed, and update
+                       // the list correspondingly.
 
-    // Create a socket
-    conn, err := net.ListenUDP("udp", local)
-    if err != nil {
-        log.Fatal(err)
-    }
+    Requesting int     // Are we currently requesting anything?
+                       // If not, the server will simply acknowledge our
+                       // existence.
 
-    // Read forever
-    for {
-        buffer := make([]byte, 1024)
-        _, sender, err := conn.ReadFromUDP(buffer)
-        if err != nil {
-            log.Fatal(err)
-        }
-
-        data := string(buffer)
-        if (data[0] == 'p') {
-            connection_channel <- Connection{sender}
-            time.Sleep(1 * time.Second)
-            conn.WriteToUDP([]byte("Hello to you!"), sender)
-        } else if (data[0] == 'm') {
-            message_channel <- Message{sender, data}   
-        }
-        time.Sleep(1 * time.Second)
-    }
-
-    done <- true
+    // When we take a job that corresponds to some request here,
+    // we delete the request from our client status.
 }
 
-// func Write(done chan bool) {
-//     // Server address
-//     remote, err := net.ResolveUDPAddr("udp", "129.241.187.255:20012")
-//     if err != nil {
-//         log.Fatal(err)
-//     }
+type master_update struct {
+    PendingOrders []order // When we see an order in here with our id on it
+                          // we know we should be doing that.
+                          // Yeah, that sounds good. Maybe every time we receive
+                          // an update, the lift should go through this list, 
+                          // and see what its current job is.
+}
 
-//     // Create a "connection" socket, use arbitrary local port
-//     conn, err := net.DialUDP("udp", nil, remote)
-//     if err != nil {
-//         log.Fatal(err)
-//     }
+func PrintOrder(Order order) {
+    log.Printf("From:%d\tTo:%d\tType:%d\tTaken: 0x%x\n", 
+               Order.FromFloor, Order.ToFloor, 
+               Order.Type, Order.TakenBy.IPAddress)
+}
 
-//     // Send forever
-//     for {
-//         // Try to send something
-//         buffer := []byte("Hoopdoopawdop")
-//         bytes_sent, err := conn.Write(buffer)
-//         if err != nil {
-//             log.Fatal(err)
-//         }
-//         log.Println("Sent", bytes_sent)
-//         time.Sleep(1 * time.Second)
-//     }
+func StructMagic() {
+    type thing struct {
+        ID uint32
+        TTL float32
+    }
 
-//     done <- true
-// }
+    type message struct {
+        Protocol uint32
+        Length   uint32
+        UserData [512]byte
+    }
+
+    // Write to byte array
+    Thing := thing{0xdeadbeef, 3.14}
+    Buffer := &bytes.Buffer{}
+    binary.Write(Buffer, binary.BigEndian, Thing)
+    log.Printf("%x\n", Buffer.Bytes())
+
+    // Read back into struct
+    Thing = thing{}
+    binary.Read(Buffer, binary.BigEndian, &Thing)
+    log.Printf("%x %f\n", Thing.ID, Thing.TTL)
+
+    // Pretend that we got a message over the network
+    // containing the above information inside UserData
+    
+
+
+    // Message := message{Protocol: 0xabad1dea, Length: 8}
+    // copy(Message.UserData[:], []byte("deadbeef40490fda"))
+
+    // // ... got message, time to parse
+
+    // // Thing := thing{}
+    // Buffer := bytes.NewBuffer(Message.UserData[:Message.Length])
+    // log.Printf("%x\n", Buffer.Bytes())
+    // binary.Read(Buffer, binary.BigEndian, &Thing)
+    // log.Printf("%x %.2f\n", Thing.ID, Thing.TTL)
+
+}
 
 func main() {
-    done := make(chan bool)
-    message_channel := make(chan Message)
-    connection_channel := make(chan Connection)
+    StructMagic()
 
-    go Listen(done, connection_channel, message_channel)
+    OrderA := order{
+        FromFloor: 0,
+        ToFloor: 1,
+        Type: order_up,
+        TakenBy: lift_id{0xabad1dea, 0xbeef},
+    }
 
+    OrderB := order{
+        FromFloor: 1,
+        ToFloor: 2,
+        Type: order_down,
+        TakenBy: lift_id{0xaabababa, 0xbeef},
+    }
+
+    PendingOrders := []order{OrderA, OrderB}
+    Update := master_update{PendingOrders}
+    for _, Order := range(Update.PendingOrders) {
+        PrintOrder(Order)
+    }
+
+    log.Println("Hello!")
+
+    /*
     for {
         select {
-        case message := <-message_channel:
-            log.Println(message.Sender, "said", message.Data)
-        case connection := <-connection_channel:
-            // TODO: Check if new connection or existing connection is pinging us
-            log.Println(connection, "wants to connect or is pinging us!")
+            case <- UpdateTimer: (goes off every 20 ms or so)
+                Send update to master
+            case <- ButtonPressed:
+                Add a new Request to our client status
+            case <- MasterUpdate:
+                Synchronize changes
+                Go through list of pending orders
+                    if PendingOrder[i] is any of ClientStatus.Requests
+                        Delete that request
+
+                Give list of jobs to lift controller
+                It prioritizes them in a CONSISTENT way, and just works.
+                e.g. oldest first, or something actually clever.
+
+                I suppose this means that the lift is a functional thing.
+                It constantly reevaluates what it should be doing (going
+                up, down, open door?) based on its input. But not quite,
+                since the lift has a state as well.
+            case <- MasterTimeout:
+                Become master.
+                Note!
+                If we are master, and we receive a MasterUpdate, we need
+                to perform an Master Resolution Ritual (MRR).
+
+                If the received MasterUpdate comes from someone with a
+                lower IP, we should stop being a master. But first, we
+                need to synchronize our pending orders list with them.
+                To do that, we enter a Synchronizing waiting state, where
+                we accept NO further orders, until we know that the new
+                master has synchronized our orders list.
+
+                Do we explicitly ACK? Probably necessary?
+                We could become a client, push all orders into our
+                Requests field, and wait until the master sends update
+                and we see that our requests are correctly received!!
+
+                Alternatively! Do not send client updates to master,
+                while finishing _all_ local orders. Hmmm. But what
+                about non-local orders...
+
+                Yeah no, we probably need to sync somehow.
         }
     }
-    
-    <-done
+    */
 }
-
-/*
-network module
----------------
-
-struct Connection {
-    NetAddress (ip and port)
-    LastPingTime
-}
-
-Connection active_connections
-
-func ListenForConnections() {
-    
-    connection, sender = listen_socket.accept()
-    active_connections[sender].LastPingTime = time.now()
-}
-
-*/
-
-// func NetSendToAll()
-
-// // #cgo LDFLAGS: -L./driver -lelev -lcomedi -lm
-// // #include "driver/elev.h"
-// import "C"
-
-// func ElevInit() {
-//     C.elev_init()
-// }
-
-// func main() {
-//     C.elev_init()
-//     C.elev_set_motor_direction(-1)
-//     time.Sleep(1 * time.Second)
-//     C.elev_set_motor_direction(0)
-
-//     // for {
-//     //     var floor C.int = C.elev_get_floor_sensor_signal()
-//     //     if floor == 3 {
-//     //         C.elev_set_motor_direction(-1)
-//     //     } else if floor == 0 {
-//     //         C.elev_set_motor_direction(1)
-//     //     }
-//     // }
-//     fmt.Println("Hey!")
-// }

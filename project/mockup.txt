@@ -1,0 +1,138 @@
+Network module
+--------------
+
+
+NetInit(recv_update chan UpdateMessage,
+        send_update chan SendMessage)
+
+for select {
+    case update := <-recv_update:
+    case timeout <- time.After(...):
+        assume master is dead
+        go into master mode
+        transmit on broadcast: "I am master"
+}
+
+Master resolution
+-----------------
+* Either on init, or after a master loses connection
+* Lifts need to decide among themselves who should be master
+
+The lift that is master will always send updates with a fixed frequency.
+Every lift listening on a certain port will receive these updates.
+
+If a master lift, A, receives a message from another master lift, B,
+A will check A.ip < B.ip. If so, A does nothing (i.e. continues mastering).
+Otherwise, A will stop being a master.
+
+Master update
+-------------
+Every so often, the master sends an update on broadcast containing
+
+o   A list of pending orders
+o   Whether or not an order has been taken by a lift
+    (If the master loses its connection to that lift, the
+    "taken" status is reset, unless the order can only be
+    executed that lift. TODO: Look into this?)
+
+The master will do this regardless of whether there is new data or not.
+This is a form of redundancy! If a client gets a corrupt packet, it does 
+not really matter, since he gets 100 packets in the next second, and the
+probability that all of them are corrupt is small.
+
+Furthermore, if the client makes a decision based on a corrupt packet, the
+decision will need to go by the server. If the server disagrees with what
+the client is trying to do, he will flat out refuse it (and tell the client
+so). 
+
+The client will then simply not do the thing.
+
+TODO: Should clients only make decisions when they receive a master update?
+
+Client update
+-------------
+Every so often, a client receives an update from the master on broadcast.
+It will then know which port the master is listening to, and can send messages
+to the master.
+
+TODO: If we use TCP, this will be done differently. 
+      But this should all be abstracted away by the network module.
+      We wish to receive updates from the current master, and
+      send updates to the current master. Regardless of protocol.
+
+The clients should pingback to the server regularly, regardless of whether or
+not they have new information for it. This is so that the server knows that the
+client is alive, and can use that information when making decisions about who
+can take what orders.
+
+When a client wishes to do a thing - say, take an order - he will notify the
+master that they wish to take an order. If they can take it, the master updates
+their local PENDING ORDERS list. 
+
+In the next regular update from master, the order will then either be in the
+list, or not. If it is, cool, we take it. If it isn't, several things could
+have happened:
+
+* We got old data
+* Our request was lost
+* The server disagreed with our request, maybe because
+  we made the decision based on old or corrupt data
+
+In either case, we simply synchronize our pending orders list with the update,
+and the lift will automagically make a new decision. It might be the same request
+as before, but this time it doesn't get lost in transit. Or we might make a 
+different decision, because we now have the latest data.
+
+The client should not need to track any RequestsToBeAcknowledged stuff, I think.
+It should, just work, automatically, because the server regularly sends us data.
+And we always make decisions based on that data.
+
+Taking orders: Example
+-------------
+Lift is idle. It looks at the pending orders
+list, and sees something it can take. It forms
+a request and sends it to master.
+
+Now, we can't just send the request when we GO
+idle. Because the request might get lost!
+
+Instead we need to resend the request until the
+master gives us something to do (in the form of
+the pending orders list having an order with our
+id on it.).
+
+I foresee this being done in one of two ways:
+*   We store a RequestToBeAcknowledged thing.
+    It has a time-to-live parameter. When that
+    goes out, we rerequest it. When we get a 
+    job, we delete it.
+
+*   We just regularly send updates to the master.
+    Every 20 ms or so. Hey! We need to do this
+    anyway, since the master needs to know that
+    we are alive (pinging). So let's just piggyback
+    some extra data on there, i.e. any requests
+    we have.
+
+I am leaning towards the latter!
+
+Reliability
+-----------
+The master will store information about pending orders. This information should
+be stored in all lifts. 
+
+Assuming, for the moment, that a master-client synchronization has happened, 
+and all clients have the same data. If the master loses connection, the clients
+will stop receiving updates from master. However, since they had the latest data,
+the data is essentially not lost.
+
+Now there is a subtle issue that occurs. When each lift loses connection with the
+master, they all become the master. If we let them do as they please, while the
+master resolution has not yet finished, they will desynchronize.
+
+Thereafter, when two masters resolve, they should synchronize any local events
+that happened after the previous master timed out. The one with higher IP needs 
+to make sure that the one with lower IP gets their list, _before_ resigning its
+master status.
+
+To summarize

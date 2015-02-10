@@ -1,0 +1,18 @@
+The lift
+--------
+What do we need:
+1   To set motor speed, floor lights, open door
+2   To be able to respond events, such as button presses,
+    floor sensors activating, obstructions.
+3   But only those events that we care about!
+4   Easy testing (I want to run this without an actual elevator!)
+
+How to acheive these:
+1   Expose setter functions?
+2   Pass in event channels to the module corresponding to
+3   the events that we care about. The module performs polling 
+    internally, to detect these events, and pushes them onto the
+    channels.
+4   We should pass in an elevator abstraction to the module.
+    We can have one that interfaces with comedilib (the lift
+    at the lab), and a fake elevator (the simulator perhaps).
