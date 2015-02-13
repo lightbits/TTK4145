@@ -2,78 +2,135 @@ package driver
 
 import (
     "log"
+    "time"
 )
 
-// TODO: Make an IO abstraction!!
+type ButtonEvent struct {
+    Floor int
+    Type  int
+}
 
-// #include "io.h"
-// #cgo LDFLAGS: -L. -lcomedi -lm
-import "C"
+type FloorEvent       int
+type StopEvent        bool
+type ObstructionEvent bool
 
-const N_FLOORS = 4
+type bit_state struct {
+    channel int
+    was_set bool
+}
 
-type button_type int32
-const (
-    button_up   = 0
-    button_down = 1
-    button_out  = 2
-)
+type io_event struct {
+    bit int
+    is_set bool
+}
 
-func is_button_pressed(btn button_type, floor int) bool {
-    if (floor < 0 || floor >= N_FLOORS) {
-        return false
+func poll(bits [N_FLOORS]bit_state, event chan io_event) {
+    for {
+        for i := 0; i < len(bits); i++ {
+            is_set := io_read_bit(bits[i].channel) == 1
+
+            if (!bits[i].was_set && is_set) {
+                event <- io_event{i, true}
+            } else if (bits[i].was_set && !is_set) {
+                event <- io_event{i, false}
+            }
+            bits[i].was_set = is_set
+        }
+
+        // If we hammer the io module too much it actually fails to read
+        // So we sleep a little bit
+        time.Sleep(1 * time.Millisecond)
+    }
+}
+
+func Init(button_pressed chan ButtonEvent,
+          floor_reached  chan FloorEvent,
+          stop_pressed   chan StopEvent,
+          obstruction    chan ObstructionEvent) {
+
+    if (!io_init()) {
+        log.Fatal("Failed to initialize driver")
     }
 
-    {BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
-    {BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
-    {BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
-    {BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
+    var up_buttons = [N_FLOORS]bit_state{
+        bit_state{BUTTON_UP1, false}, 
+        bit_state{BUTTON_UP2, false},
+        bit_state{BUTTON_UP3, false},
+        bit_state{BUTTON_UP4, false}}
 
-    if (C.io_read_bit())
+    var down_buttons = [N_FLOORS]bit_state{
+        bit_state{BUTTON_DOWN1, false}, 
+        bit_state{BUTTON_DOWN2, false},
+        bit_state{BUTTON_DOWN3, false},
+        bit_state{BUTTON_DOWN4, false}}
+
+    var out_buttons = [N_FLOORS]bit_state{
+        bit_state{BUTTON_COMMAND1, false}, 
+        bit_state{BUTTON_COMMAND2, false},
+        bit_state{BUTTON_COMMAND3, false},
+        bit_state{BUTTON_COMMAND4, false}}
+
+    var floor_sensors = [N_FLOORS]bit_state{
+        bit_state{SENSOR_FLOOR1, false},
+        bit_state{SENSOR_FLOOR2, false},
+        bit_state{SENSOR_FLOOR3, false},
+        bit_state{SENSOR_FLOOR4, false}}
+
+    var obstructions = [N_FLOORS]bit_state{
+        bit_state{OBSTRUCTION, false}}
+
+    var stops = [N_FLOORS]bit_state{
+        bit_state{STOP, false}}
+
+    up_ch   := make(chan io_event)
+    down_ch := make(chan io_event)
+    out_ch  := make(chan io_event)
+    flr_ch  := make(chan io_event)
+    stp_ch  := make(chan io_event)
+    obs_ch  := make(chan io_event)
+
+    if (button_pressed != nil) {
+        go poll(up_buttons, up_ch)
+        go poll(down_buttons, down_ch)
+        go poll(out_buttons, out_ch)
+    }
+
+    if (floor_reached != nil) {
+        go poll(floor_sensors, flr_ch)
+    }
+
+    if (stop_pressed != nil) {
+        go poll(stops, stp_ch)
+    }
+
+    if (obstruction != nil) {
+        go poll(obstructions, obs_ch)
+    }
+
+    for {
+        select {
+        case e := <-up_ch:
+            if (e.is_set) {
+                button_pressed <- ButtonEvent{e.bit, 0}
+            }
+        case e := <-down_ch:
+            if (e.is_set) {
+                button_pressed <- ButtonEvent{e.bit, 1}
+            }
+        case e := <-out_ch:
+            if (e.is_set) {
+                button_pressed <- ButtonEvent{e.bit, 2}
+            }
+        case e := <-flr_ch:
+            if (e.is_set) {
+                floor_reached <- FloorEvent(e.bit)
+            }
+        case e := <- stp_ch:
+            if (e.is_set) {
+                stop_pressed <- StopEvent(true)
+            }
+        case e := <- obs_ch:
+            obstruction <- ObstructionEvent(e.is_set)
+        }
+    }
 }
-
-func DriverTest() {
-    // Poll buttons and stuff
-
-
-
-
-    // assert(floor >= 0);
-    // assert(floor < N_FLOORS);
-    // assert(!(button == BUTTON_CALL_UP && floor == N_FLOORS - 1));
-    // assert(!(button == BUTTON_CALL_DOWN && floor == 0));
-    // assert(button == BUTTON_CALL_UP || button == BUTTON_CALL_DOWN || button == BUTTON_COMMAND);
-
-    // if (io_read_bit(button_channel_matrix[floor][button]))
-    //     return 1;
-    // else
-    //     return 0;
-
-    // // Poll floor sensors
-    // if (io_read_bit(SENSOR_FLOOR1))
-    //     return 0;
-    // else if (io_read_bit(SENSOR_FLOOR2))
-    //     return 1;
-    // else if (io_read_bit(SENSOR_FLOOR3))
-    //     return 2;
-    // else if (io_read_bit(SENSOR_FLOOR4))
-    //     return 3;
-    // else
-    //     return -1;
-
-    // return io_read_bit(OBSTRUCTION);
-    // return io_read_bit(STOP);
-}
-
-// type ButtonEvent struct {
-//     Floor int
-// }
-
-// type SensorEvent struct {
-//     Floor int
-// }
-
-// func Init(button_events chan ButtonEvent,
-//           sensor_events chan SensorEvent) {
-
-// }

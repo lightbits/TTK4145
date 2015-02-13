@@ -133,7 +133,25 @@ func main() {
     // StructMagic()
     NetworkMockup()
 
-    driver.Init()
+    button_pressed  := make(chan driver.ButtonEvent)
+    floor_reached   := make(chan driver.FloorEvent)
+    stop_pressed    := make(chan driver.StopEvent)
+    obstruction     := make(chan driver.ObstructionEvent)
+
+    go driver.Init(button_pressed, floor_reached, stop_pressed, obstruction)
+
+    for {
+        select {
+        case button := <- button_pressed:
+            log.Println("Button ", button)
+        case obstructed := <- obstruction:
+            log.Println("Obstructed ", obstructed)
+        case <- stop_pressed:
+            log.Println("Stop")
+        case floor := <- floor_reached:
+            log.Println("Floor ", floor)
+        }
+    }
 
     OrderA := order{
         Floor: 0,
