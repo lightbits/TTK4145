@@ -1,5 +1,5 @@
-The lift
---------
+The driver
+----------
 What do we need:
 1   To set motor speed, floor lights, open door
 2   To be able to respond events, such as button presses,
@@ -16,3 +16,14 @@ How to acheive these:
 4   We should pass in an elevator abstraction to the module.
     We can have one that interfaces with comedilib (the lift
     at the lab), and a fake elevator (the simulator perhaps).
+
+The lift controller
+-------------------
+What do we need:
+1   Maybe a destination queue
+2   A way to tell the main thread when the lift has executed all orders in queue?
+3   Add jobs to queue
+4   Tell the lift when it passes a floor
+
+How to acheive this:
+    The lift controller can be a non-concurrent state machine.

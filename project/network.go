@@ -11,13 +11,10 @@ away? So that we can replace it with test code?
 */
 
 type network_message struct {
-    Protocol uint32
-    UserData [512]byte
-}
-
-func FakeNetwork(SendChannel chan network_message, 
-                 RecvChannel chan network_message) {
-
+    Protocol     uint32
+    Length       uint32
+    UserData     []byte
+    EndDelimiter uint32
 }
 
 func NetworkInit(OutgoingUpdate chan client_update,
