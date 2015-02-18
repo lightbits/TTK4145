@@ -1,0 +1,90 @@
+Process pairs
+-------------
+
+What if, instead of _everyone_ automatically being promoted to master as soon as the current master is lost, only one client is promoted. For example, the one with lowest IP.
+
+The master can regularly send _all_ stored data to only this backup, and send reduced job tables to the other clients. Furthermore, the master tells its backup that it is - indeed - the backup.
+
+A master-lost-connection is then handled in the following manner:
+
+    1 Master loses connection
+
+    2 Clients detect connection loss
+
+    3 The backup becomes master using the latest status update.
+      It also identifies its backup, using the previous master's
+      list of listening clients, and starts sending updates on
+      broadcast.
+
+    4 Other clients do _nothing_ until master updates start coming in.
+      If they do not come, one of two things could have happened:
+
+      a) The backup also lost connection.
+
+      b) We lost connection to the network.
+
+-----------------------------------------------------------------
+
+The possible upsides to this scheme is
+
+    + Less bandwidth demanding: Only one client gets full status updates. The others get reduced updates containing only a list of jobs relevant for them.
+
+    + No need for inter-master synchronization after a master-lost event.
+
+The downsides are
+
+    - Less redundancy -> less reliable.
+
+    - Clients that lose connection (jfr. 4b above) cannot become independent masters
+      and expect to rejoin the network at a later time, since this would require inter-
+      master synchronization. Thus, they must either stop operation or be forever
+      independent lifts, until system restart.
+
+      Indeed, a full system restart is required for the network to consist of N
+      cooperating lifts again.
+
+-----------------------------------------------------------------
+
+Upon start-up, we do this
+
+<Startup process>
+-----------------
+1   Boot all N machines in arbitrary order
+2   Each machine enters WAIT_FOR_MASTER state, and sends heartbeats over broadcast
+3   If any machine has received broadcast messages from N-1 unique machines, do:
+
+    if my_ip < all_other_ips:
+        Become master
+        Select backup (the machine with the next-lowest ip)
+        Start sending master updates
+    else
+        Keep broadcasting until we receive status updates from master
+
+
+N-way process pairs
+------------------------------------
+Is actually problematic, thinking closer about it.
+
+What if a client loses connection with master, but
+all other clients retain connection. The lost client
+will become a master on its own, and broadcast this
+on the master channel.
+
+But oh wait, now everyone gets messages from TWO
+masters. Whoops!
+
+Design choice:
+  Any client that loses connection with the master -
+  in the sense that it hasn't received any updates
+  in "a while" - must either
+
+  a) stop operation, or
+  b) continue operation in isolation, but not
+     communicating with any other lifts.
+
+  Clients can only "reconnect" when the system
+  is restarted.
+
+This simplifies matters a great deal.
+* No inter-master synchronization
+* Only ever a single master is broadcasting

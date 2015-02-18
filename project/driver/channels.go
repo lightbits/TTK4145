@@ -56,3 +56,38 @@ const (
     LIGHT_DOWN1         = -1
     LIGHT_UP4           = -1
 )
+
+type bit_state struct {
+    channel int
+    was_set bool
+}
+
+var UP_BUTTONS = [N_FLOORS]bit_state{
+    bit_state{BUTTON_UP1, false}, 
+    bit_state{BUTTON_UP2, false},
+    bit_state{BUTTON_UP3, false},
+    bit_state{BUTTON_UP4, false}}
+
+var DOWN_BUTTONS = [N_FLOORS]bit_state{
+    bit_state{BUTTON_DOWN1, false}, 
+    bit_state{BUTTON_DOWN2, false},
+    bit_state{BUTTON_DOWN3, false},
+    bit_state{BUTTON_DOWN4, false}}
+
+var OUT_BUTTONS = [N_FLOORS]bit_state{
+    bit_state{BUTTON_COMMAND1, false}, 
+    bit_state{BUTTON_COMMAND2, false},
+    bit_state{BUTTON_COMMAND3, false},
+    bit_state{BUTTON_COMMAND4, false}}
+
+var FLOOR_SENSORS = [N_FLOORS]bit_state{
+    bit_state{SENSOR_FLOOR1, false},
+    bit_state{SENSOR_FLOOR2, false},
+    bit_state{SENSOR_FLOOR3, false},
+    bit_state{SENSOR_FLOOR4, false}}
+
+var OBSTRUCTIONS = [N_FLOORS]bit_state{
+    bit_state{OBSTRUCTION, false}}
+
+var STOP_BUTTONS = [N_FLOORS]bit_state{
+    bit_state{STOP, false}}

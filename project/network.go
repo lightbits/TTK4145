@@ -5,11 +5,6 @@ import (
     "log"
 )
 
-/*
-Should the actual master-client network thingy be abstracted
-away? So that we can replace it with test code?
-*/
-
 type network_message struct {
     Protocol     uint32
     Length       uint32
@@ -17,6 +12,9 @@ type network_message struct {
     EndDelimiter uint32
 }
 
+// The reason we use a channel for OUTGOING messages
+// is because the network might be busy reading a packet,
+// but we don't want to block?
 func NetworkInit(OutgoingUpdate chan client_update,
                  IncomingUpdate chan master_update) {
 

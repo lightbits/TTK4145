@@ -52,7 +52,7 @@ type client_update struct {
 
                                 Say we set the finished flag. When the master then gets our
                                 status update, he will see that the corresponding pending order
-                                was finished. 
+                                was finished.
 
                                 Now, he could delete the order, and it would be up to us to
                                 iterate over the list and confirm that our finished order is NOT there.
@@ -64,11 +64,11 @@ type client_update struct {
                                 he deletes it from the list?
 
                                 Because think about what happens if our status gets corrupted to
-                                say we finished an order that we haven't. The master will then set the finished flag to true. Master broadcasts status. We see read that the job was finished, but it is still in our destination queue. Obviously an error! 
+                                say we finished an order that we haven't. The master will then set the finished flag to true. Master broadcasts status. We see read that the job was finished, but it is still in our destination queue. Obviously an error!
 
                                 The next time we send our status it will, hopefully, not be corrupt. The master will then write the correct flag (i.e. not finished).
 
-                                What happens if our finished flag was flipped, the master thinks it is finished, and we lose connection? 
+                                What happens if our finished flag was flipped, the master thinks it is finished, and we lose connection?
 
                                 Proposition: An order is finished (in a reliable sense) iff it is neither in our destination queue nor the master's job list. When master detects that we have timed out, it will reset the order to be Not taken by us and Not finished.
 
@@ -81,18 +81,19 @@ type master_update struct {
     PendingOrders []order // When we see an order in here with our id on it
                           // we know we should be doing that.
                           // Yeah, that sounds good. Maybe every time we receive
-                          // an update, the lift should go through this list, 
+                          // an update, the lift should go through this list,
                           // and see what its current job is.
                           // Or rather, if it sees a job not in its current destination
                           // queue, we add it to the destination queue.
 }
 
 func PrintOrder(Order order) {
-    log.Printf("From:%d\tTo:%d\tType:%d\tTaken: 0x%x\n", 
-               Order.FromFloor, Order.ToFloor, 
+    log.Printf("From:%d\tTo:%d\tType:%d\tTaken: 0x%x\n",
+               Order.FromFloor, Order.ToFloor,
                Order.Type, Order.TakenBy.IPAddress)
 }
 
+// TODO(simen): Yes, this is what I wanted... No it isn't!
 func StructMagic() {
     type thing struct {
         ID uint32
@@ -118,7 +119,7 @@ func StructMagic() {
 
     // Pretend that we got a message over the network
     // containing the above information inside UserData
-    
+
 
 
     // Message := message{Protocol: 0xabad1dea, Length: 8}

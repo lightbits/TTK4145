@@ -5,22 +5,23 @@ import (
     "time"
 )
 
+type ButtonType int
+const (
+    ButtonUp ButtonType = iota
+    ButtonDown
+    ButtonOut
+)
 type ButtonEvent struct {
     Floor int
-    Type  int
+    Type  ButtonType
 }
 
 type FloorEvent       int
 type StopEvent        bool
 type ObstructionEvent bool
 
-type bit_state struct {
-    channel int
-    was_set bool
-}
-
 type io_event struct {
-    bit int
+    bit    int
     is_set bool
 }
 
@@ -37,9 +38,28 @@ func poll(bits [N_FLOORS]bit_state, event chan io_event) {
             bits[i].was_set = is_set
         }
 
-        // If we hammer the io module too much it actually fails to read
-        // So we sleep a little bit
+        // If we hammer the io module too much it actually fails to read.
+        // So we sleep a little bit.
         time.Sleep(1 * time.Millisecond)
+    }
+}
+
+type MotorDirection int
+const (
+    MOTOR_DIR_UP   = 1
+    MOTOR_DIR_STOP = 0
+    MOTOR_DIR_DOWN = -1
+)
+
+func SetMotorDirection(dir MotorDirection) {
+    if (dir == 0){
+        io_write_analog(MOTOR, 0);
+    } else if (dir > 0) {
+        io_clear_bit(MOTORDIR);
+        io_write_analog(MOTOR, 2800);
+    } else if (dir < 0) {
+        io_set_bit(MOTORDIR);
+        io_write_analog(MOTOR, 2800);
     }
 }
 
@@ -52,36 +72,6 @@ func Init(button_pressed chan ButtonEvent,
         log.Fatal("Failed to initialize driver")
     }
 
-    var up_buttons = [N_FLOORS]bit_state{
-        bit_state{BUTTON_UP1, false}, 
-        bit_state{BUTTON_UP2, false},
-        bit_state{BUTTON_UP3, false},
-        bit_state{BUTTON_UP4, false}}
-
-    var down_buttons = [N_FLOORS]bit_state{
-        bit_state{BUTTON_DOWN1, false}, 
-        bit_state{BUTTON_DOWN2, false},
-        bit_state{BUTTON_DOWN3, false},
-        bit_state{BUTTON_DOWN4, false}}
-
-    var out_buttons = [N_FLOORS]bit_state{
-        bit_state{BUTTON_COMMAND1, false}, 
-        bit_state{BUTTON_COMMAND2, false},
-        bit_state{BUTTON_COMMAND3, false},
-        bit_state{BUTTON_COMMAND4, false}}
-
-    var floor_sensors = [N_FLOORS]bit_state{
-        bit_state{SENSOR_FLOOR1, false},
-        bit_state{SENSOR_FLOOR2, false},
-        bit_state{SENSOR_FLOOR3, false},
-        bit_state{SENSOR_FLOOR4, false}}
-
-    var obstructions = [N_FLOORS]bit_state{
-        bit_state{OBSTRUCTION, false}}
-
-    var stops = [N_FLOORS]bit_state{
-        bit_state{STOP, false}}
-
     up_ch   := make(chan io_event)
     down_ch := make(chan io_event)
     out_ch  := make(chan io_event)
@@ -90,36 +80,36 @@ func Init(button_pressed chan ButtonEvent,
     obs_ch  := make(chan io_event)
 
     if (button_pressed != nil) {
-        go poll(up_buttons, up_ch)
-        go poll(down_buttons, down_ch)
-        go poll(out_buttons, out_ch)
+        go poll(UP_BUTTONS, up_ch)
+        go poll(DOWN_BUTTONS, down_ch)
+        go poll(OUT_BUTTONS, out_ch)
     }
 
     if (floor_reached != nil) {
-        go poll(floor_sensors, flr_ch)
+        go poll(FLOOR_SENSORS, flr_ch)
     }
 
     if (stop_pressed != nil) {
-        go poll(stops, stp_ch)
+        go poll(STOP_BUTTONS, stp_ch)
     }
 
     if (obstruction != nil) {
-        go poll(obstructions, obs_ch)
+        go poll(OBSTRUCTIONS, obs_ch)
     }
 
     for {
         select {
         case e := <-up_ch:
             if (e.is_set) {
-                button_pressed <- ButtonEvent{e.bit, 0}
+                button_pressed <- ButtonEvent{e.bit, ButtonUp}
             }
         case e := <-down_ch:
             if (e.is_set) {
-                button_pressed <- ButtonEvent{e.bit, 1}
+                button_pressed <- ButtonEvent{e.bit, ButtonDown}
             }
         case e := <-out_ch:
             if (e.is_set) {
-                button_pressed <- ButtonEvent{e.bit, 2}
+                button_pressed <- ButtonEvent{e.bit, ButtonOut}
             }
         case e := <-flr_ch:
             if (e.is_set) {

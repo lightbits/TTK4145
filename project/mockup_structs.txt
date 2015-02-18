@@ -1,0 +1,90 @@
+func NetworkMockup() {
+    type network_message struct {
+        Protocol     uint32
+        Length       uint32
+        UserData     []byte
+        Checksum     uint32
+    }
+
+    type request struct {
+        Floor   int32
+        Type    order_type
+        TakenBy lift_id
+    }
+
+    // Let's send a request over the network!
+    r := request{Floor: 3, Type: order_up, TakenBy: lift_id{0x81F1BB88, 20012}}
+
+    // First! We need to wrap it into a network_message packet
+    // so that our network module can transmit it.
+
+    // Convert data to byte array
+    b := &bytes.Buffer{}
+    binary.Write(b, binary.BigEndian, r)
+
+    // Wrap into packet
+    const CL_STATUS_PROTOCOL = 0xdeadbeef
+    packet := network_message{Protocol: CL_STATUS_PROTOCOL, 
+                              Length: uint32(b.Len()), 
+                              UserData: b.Bytes()}
+
+    // Send over network....
+    // ...
+
+    // Receiver side, we need to parse the packet
+    if (packet.Protocol != CL_STATUS_PROTOCOL) {
+        log.Println("Received an invalid packet")
+        return
+    }
+
+    // And read into the struct type
+    b = bytes.NewBuffer(packet.UserData[:packet.Length])
+    r = request{}
+    binary.Read(b, binary.BigEndian, &r)
+
+    log.Println("Received a client status update")
+    log.Printf("Floor: %d Type: %d TakenBy: %d.%d.%d.%d\n",
+               r.Floor, r.Type, 
+               (r.TakenBy.IPAddress >> 24) & 0xff,
+               (r.TakenBy.IPAddress >> 16) & 0xff,
+               (r.TakenBy.IPAddress >> 8) & 0xff,
+               r.TakenBy.IPAddress & 0xff)
+}
+
+-----------------------------------------------------
+
+func StructMagic() {
+    type thing struct {
+        ID  uint32
+        TTL float32
+    }
+
+    type message struct {
+        Protocol uint32
+        Length   uint32
+        UserData [512]byte
+    }
+
+    // Write to byte array
+    t := thing{0xdeadbeef, 3.141593}
+    b := &bytes.Buffer{}
+    binary.Write(b, binary.BigEndian, t)
+    log.Printf("%x\n", b.Bytes())
+
+    // Pretend that we got a message over network
+    m := message{Protocol: 0xabad1dea, Length: 8}
+    copy(m.UserData[:m.Length], b.Bytes())
+    log.Printf("%x\n", m.UserData[:m.Length])
+
+    // Parse message and convert into a readable thing
+    b = bytes.NewBuffer(m.UserData[:m.Length])
+    t = thing{}
+    binary.Read(b, binary.BigEndian, &t)
+    log.Printf("%x %f\n", t.ID, t.TTL)
+
+    // Read back into struct
+    // Thing = thing{}
+    // binary.Read(Buffer, binary.BigEndian, &Thing)
+    // log.Printf("%x %f\n", Thing.ID, Thing.TTL)
+
+}
