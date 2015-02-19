@@ -5,22 +5,18 @@ import (
     "log"
 )
 
-type Message struct {
-    Blocks
-}
-
-type packet struct {
+type network_message struct {
     Protocol     uint32
     Length       uint32
-    Content      []byte
+    UserData     []byte
     EndDelimiter uint32
 }
 
 // The reason we use a channel for OUTGOING messages
 // is because the network might be busy reading a packet,
 // but we don't want to block?
-func NetworkInit(outgoing_messages chan Message,
-                 incoming_messages chan Message) {
+func NetworkInit(OutgoingUpdate chan client_update,
+                 IncomingUpdate chan master_update) {
 
     SendChannel := make(chan network_message)
     RecvChannel := make(chan network_message)

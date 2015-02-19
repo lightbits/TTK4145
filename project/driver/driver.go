@@ -16,24 +16,49 @@ type ButtonEvent struct {
     Type  ButtonType
 }
 
-type FloorEvent       int
-type StopEvent        bool
-type ObstructionEvent bool
+type ReachedFloorEvent struct {
+    FloorIndex int
+}
+
+type StopButtonEvent struct {
+    IsPressed bool
+}
+
+type ObstructionEvent struct {
+    IsObstructed bool
+}
+
+type MotorDirection int
+const (
+    MotorDirectionUp   = 1
+    MotorDirectionStop = 0
+    MotorDirectionDown = -1
+)
+
+type edge_detect int
+const (
+    edge_detect_rising = iota
+    edge_detect_falling
+    edge_detect_both
+)
 
 type io_event struct {
     bit    int
     is_set bool
 }
 
-func poll(bits [N_FLOORS]bit_state, event chan io_event) {
+func poll(bits [N_FLOORS]bit_state, event chan io_event, edge edge_detect) {
     for {
         for i := 0; i < len(bits); i++ {
             is_set := io_read_bit(bits[i].channel) == 1
 
-            if (!bits[i].was_set && is_set) {
-                event <- io_event{i, true}
-            } else if (bits[i].was_set && !is_set) {
-                event <- io_event{i, false}
+            is_rising := !bits[i].was_set && is_set
+            is_falling := bits[i].was_set && !is_set
+
+            if ((edge == edge_detect_rising && is_rising) ||
+                (edge == edge_detect_falling && is_falling) ||
+                (edge == edge_detect_both && (is_rising || is_falling))) {
+                event <- io_event{i, is_set}
             }
             bits[i].was_set = is_set
         }
@@ -43,13 +68,6 @@ func poll(bits [N_FLOORS]bit_state, event chan io_event) {
         time.Sleep(1 * time.Millisecond)
     }
 }
-
-type MotorDirection int
-const (
-    MOTOR_DIR_UP   = 1
-    MOTOR_DIR_STOP = 0
-    MOTOR_DIR_DOWN = -1
-)
 
 func SetMotorDirection(dir MotorDirection) {
     if (dir == 0){
@@ -64,8 +82,8 @@ func SetMotorDirection(dir MotorDirection) {
 }
 
 func Init(button_pressed chan ButtonEvent,
-          floor_reached  chan FloorEvent,
-          stop_pressed   chan StopEvent,
+          floor_reached  chan ReachedFloorEvent,
+          stop_pressed   chan StopButtonEvent,
           obstruction    chan ObstructionEvent) {
 
     if (!io_init()) {
@@ -80,47 +98,37 @@ func Init(button_pressed chan ButtonEvent,
     obs_ch  := make(chan io_event)
 
     if (button_pressed != nil) {
-        go poll(UP_BUTTONS, up_ch)
-        go poll(DOWN_BUTTONS, down_ch)
-        go poll(OUT_BUTTONS, out_ch)
+        go poll(UP_BUTTONS, up_ch, edge_detect_rising)
+        go poll(DOWN_BUTTONS, down_ch, edge_detect_rising)
+        go poll(OUT_BUTTONS, out_ch, edge_detect_rising)
     }
 
     if (floor_reached != nil) {
-        go poll(FLOOR_SENSORS, flr_ch)
+        go poll(FLOOR_SENSORS, flr_ch, edge_detect_rising)
     }
 
     if (stop_pressed != nil) {
-        go poll(STOP_BUTTONS, stp_ch)
+        go poll(STOP_BUTTONS, stp_ch, edge_detect_rising)
     }
 
     if (obstruction != nil) {
-        go poll(OBSTRUCTIONS, obs_ch)
+        go poll(OBSTRUCTIONS, obs_ch, edge_detect_both)
     }
 
     for {
         select {
         case e := <-up_ch:
-            if (e.is_set) {
-                button_pressed <- ButtonEvent{e.bit, ButtonUp}
-            }
+            button_pressed <- ButtonEvent{e.bit, ButtonUp}
         case e := <-down_ch:
-            if (e.is_set) {
-                button_pressed <- ButtonEvent{e.bit, ButtonDown}
-            }
+            button_pressed <- ButtonEvent{e.bit, ButtonDown}
         case e := <-out_ch:
-            if (e.is_set) {
-                button_pressed <- ButtonEvent{e.bit, ButtonOut}
-            }
+            button_pressed <- ButtonEvent{e.bit, ButtonOut}
         case e := <-flr_ch:
-            if (e.is_set) {
-                floor_reached <- FloorEvent(e.bit)
-            }
+            floor_reached <- ReachedFloorEvent{e.bit}
         case e := <- stp_ch:
-            if (e.is_set) {
-                stop_pressed <- StopEvent(true)
-            }
+            stop_pressed <- StopButtonEvent{e.is_set}
         case e := <- obs_ch:
-            obstruction <- ObstructionEvent(e.is_set)
+            obstruction <- ObstructionEvent{e.is_set}
         }
     }
 }
