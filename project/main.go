@@ -97,28 +97,6 @@ func Client() {
         Finished  bool
     }
 
-}
-
-func main() {
-    button_pressed := make(chan driver.ButtonEvent)
-    floor_reached  := make(chan driver.ReachedFloorEvent)
-    stop_pressed   := make(chan driver.StopButtonEvent)
-    obstruction    := make(chan driver.ObstructionEvent)
-    finished_order := make(chan lift.FinishedOrderEvent)
-    client_update  := make(chan network.ClientUpdate)
-    master_update  := make(chan network.MasterUpdate)
-    master_timeout_timer := time.NewTimer()
-    client_update_timer := time.NewTimer()
-
-    // TODO:
-    /*
-     * How do we send jobs to lift
-     * Do we have a single backup for primary or many
-     * How do we handle case when backup loses connection to primary,
-       but other clients remain connected to primary -> two primaries
-     *
-    */
-
     go driver.Init(button_pressed, floor_reached, stop_pressed, obstruction)
     go lift.Init(finished_order)
     for {
@@ -159,24 +137,18 @@ func main() {
             log.Println("Stop was pressed")
         }
     }
+}
 
-    // OrderA := order{
-    //     Floor: 0,
-    //     Type: order_up,
-    //     TakenBy: lift_id{0xabad1dea, 0xbeef},
-    // }
-
-    // OrderB := order{
-    //     Floor: 1,
-    //     Type: order_down,
-    //     TakenBy: lift_id{0xaabababa, 0xbeef},
-    // }
-
-    // PendingOrders := []order{OrderA, OrderB}
-    // Update := master_update{PendingOrders}
-    // for _, Order := range(Update.PendingOrders) {
-    //     PrintOrder(Order)
-    // }
+func main() {
+    button_pressed := make(chan driver.ButtonEvent)
+    floor_reached  := make(chan driver.ReachedFloorEvent)
+    stop_pressed   := make(chan driver.StopButtonEvent)
+    obstruction    := make(chan driver.ObstructionEvent)
+    finished_order := make(chan lift.FinishedOrderEvent)
+    client_update  := make(chan network.ClientUpdate)
+    master_update  := make(chan network.MasterUpdate)
+    master_timeout_timer := time.NewTimer()
+    client_update_timer := time.NewTimer()
 
     log.Println("Hello!")
 }
