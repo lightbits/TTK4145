@@ -13,6 +13,9 @@ Todo
         - Send/RecvMessage where Message is an interface that has defined
         a ConvertToByteBlob() function?
 
+    - If the elevator is disconnected from the network, it should still serve whatever orders are currently "in the system" (ie whatever lights are showing)
+        - It should also serve the internal orders, so that people can exit the elevator even if it is disconnected
+
 *   Implement timeouts
 *   Implement network module
 *   Implement driver
@@ -21,8 +24,11 @@ Todo
 *   Implement client
     - Send client updates to primary
     - Receive master updates
+        - Set lights, etc
     - Give jobs to lift
     - Take over on primary timeout
+    - How the elevator behaves when it cannot connect to the network during initialization
+    - How the external (call up, call down) buttons work when the elevator is disconnected from the network
 
 *   Implement master
     - Receive client updates
