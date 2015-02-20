@@ -9,8 +9,8 @@ package main
 import (
     // "os/exec"
     "time"
-    "log"
     "net"
+    "log"
     "encoding/binary"
     "bytes"
     "fmt"
@@ -25,7 +25,7 @@ type Message struct {
 }
 
 func ListenForMessages(incoming_message chan Message) {
-    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:33445")
+    local, err := net.ResolveUDPAddr("udp", ":33445")
     if err != nil {
         log.Fatal(err)
     }
@@ -41,7 +41,7 @@ func ListenForMessages(incoming_message chan Message) {
         if err != nil {
             log.Fatal(err)
         }
-        // log.Println("Read", read_bytes, "from", sender)
+        // fmt.Println("Read", read_bytes, "from", sender)
 
         b := bytes.NewBuffer(buffer)
         m := Message{}
@@ -51,7 +51,7 @@ func ListenForMessages(incoming_message chan Message) {
 }
 
 func SendMessages(outgoing_message chan Message) {
-    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:44556")
+    local, err := net.ResolveUDPAddr("udp", ":44556")
     if err != nil {
         log.Fatal(err)
     }
@@ -75,56 +75,75 @@ func SendMessages(outgoing_message chan Message) {
         if err != nil {
             log.Fatal(err)
         }
-        // log.Println("Sent", sent_bytes)
+        // fmt.Println("Sent", sent_bytes)
         time.Sleep(1 * time.Second)
     }
 }
 
-func Master(initial_state State) {
-    outgoing_message := make(chan Message)
-    go SendMessages(outgoing_message)
+func Master(initial_state State, 
+            outgoing_message chan Message,
+            incoming_message chan Message) {
 
-    // Startup
-    time.Sleep(2 * time.Second)
+    fmt.Println("Launching master process")
+    // TODO: Launch backup automatically
 
     state := initial_state
     for {
         // Pretend to do work
+        fmt.Println("MASTER preparing work")
+        time.Sleep(1 * time.Second)
         state.Tick++
-        fmt.Println("PRINT", state.Tick)
+        fmt.Println("MASTER finished work")
+        time.Sleep(1 * time.Second)
+        outgoing_message <- Message{state}
+        fmt.Println("MASTER sent state to backup")
+        time.Sleep(1 * time.Second)
         // ...
 
         // Send state update to backup every second
-        outgoing_message <- Message{state}
+        fmt.Println("MASTER PRINT", state.Tick)
+        fmt.Println()
         time.Sleep(1 * time.Second)
 
-        if (state.Tick == 10) {
-            time.Sleep(5 * time.Second)
+        if (state.Tick == 5) {
+            time.Sleep(8 * time.Second)
+            break
         }
     }
 }
 
-func Backup(null_state State) {
-    incoming_message := make(chan Message)
-    go ListenForMessages(incoming_message)
-
+func Backup(null_state State, outgoing_message chan Message, incoming_message chan Message) {
+    fmt.Println("Launching backup process")
     state := null_state
+
+    Loop:
     for {
         select {
-        case <-time.After(3 * time.Second):
-            // Take over
-            log.Println("Primary loss detected. Take over @", state.Tick)
+        case <-time.After(7 * time.Second):
+            fmt.Println("BACKUP Primary loss detected. Take over @", state.Tick)
+
+            // We don't know if the master was able to do this yet, so we do it
+            // in the risk of duplicate prints
+            fmt.Println("BACKUP PRINT", state.Tick)
+
+            go Master(state, outgoing_message, incoming_message)
+            break Loop
         case msg := <- incoming_message:
             state = msg.PrimaryState
-            log.Println("Update received. Primary state @", state.Tick)
+            fmt.Println("BACKUP Update received. Primary state @", state.Tick)
         }
     }
 }
 
 func main() {
+    incoming_message := make(chan Message)
+    outgoing_message := make(chan Message)
+    go ListenForMessages(incoming_message)
+    go SendMessages(outgoing_message)
     null_state := State{0}
-    go Master(null_state)
-    go Backup(null_state)
 
-    time.Sleep(20 * time.Second)
+    go Master(null_state, outgoing_message, incoming_message)
+    // go Backup(null_state)
+
+    time.Sleep(40 * time.Second)
 }
