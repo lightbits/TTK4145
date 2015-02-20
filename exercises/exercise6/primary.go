@@ -13,6 +13,7 @@ import (
     "log"
     "net"
     "os"
+    "os/exec"
     "encoding/binary"
     "bytes"
 )
@@ -28,7 +29,7 @@ type Message struct {
 var NullState State = State{0}
 
 func SendMessages(outgoing_message chan Message) {
-    local, err := net.ResolveUDPAddr("udp", ":44556")
+    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:44556")
     if err != nil {
         log.Fatal(err)
     }
@@ -55,35 +56,58 @@ func SendMessages(outgoing_message chan Message) {
     }
 }
 
-func main() {
-    fmt.Println("Launching master process")
+func Log(str string) {
+    fmt.Println(str)
+    log.Println(str)
+}
 
+func main() {
+    // Redirect log output
+    f, err := os.OpenFile("log.txt", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+    if err != nil {
+        log.Fatalf("error opening file: %v", err)
+    }
+    defer f.Close()
+    log.SetOutput(f)
+
+    // Set up com channel with backup
     outgoing_message := make(chan Message)
     go SendMessages(outgoing_message)
 
-    // TODO: Launch backup automatically
+    // Launch backup process
+    arg := "C:/Dokumenter/ttk4145/exercises/exercise6/start_backup.bat"
+    cmd := exec.Command("cmd", "/C", "start", arg)
+    err = cmd.Start()
+    if err != nil {
+        log.Fatal(err)
+    }
 
+    // Launch master process
+    Log("Launching master process")
     state := NullState
 
+    // Perhaps it is a restart?
     if len(os.Args) > 1 {
         initial_state, _ := strconv.Atoi(os.Args[1])
         state.Tick = int32(initial_state)
+        Log(fmt.Sprintf("MASTER restart @%d", state.Tick))
+        Log(fmt.Sprintf("MASTER PRINT %d", state.Tick))
     }
 
     for {
-        fmt.Println("MASTER preparing work")
+        Log("MASTER preparing work")
         time.Sleep(1 * time.Second)
         state.Tick++
 
-        fmt.Println("MASTER finished work")
+        Log("MASTER finished work")
         time.Sleep(1 * time.Second)
         outgoing_message <- Message{state}
 
-        fmt.Println("MASTER sent state to backup")
+        Log("MASTER sent state to backup")
         time.Sleep(1 * time.Second)
 
-        fmt.Println("MASTER PRINT", state.Tick)
-        fmt.Println()
+        Log(fmt.Sprintf("MASTER PRINT %d", state.Tick))
+        Log("")
         time.Sleep(1 * time.Second)
     }
 }
