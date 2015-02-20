@@ -4,6 +4,62 @@ Create a program (in any language, on any OS) that uses the process pair techniq
 You cannot rely on the primary telling the backup when it has died (because it would have to be dead first...). Instead, have the primary broadcast that it is alive a few times a second, and have the backup become the primary when a certain number of messages have been missed.
 */
 
+/*
+Solution:
+
+The master process can be simplified to the following three actions
+
+    a. Do internal work (state++)
+    b. Do external work (print to display)
+    c. Send state to backup
+
+In which order should the master do these?
+
+    abc
+    acb
+    bac
+    bca
+    cab
+    cba
+
+acb should work.
+
+Assume the master state is at tick N.
+Assume the backup has received state N.
+Consider where the master might die:
+
+    Before STATE++: Backup takes over from N.
+                    PRINT N (duplicate)
+                    STATE++
+                    PRINT N+1 (new)
+
+                    Ok. If we accept duplicates
+
+    After STATE++
+    Before SEND:    Backup takes over from N
+                    PRINT N (duplicate)
+                    STATE++
+                    PRINT N+1
+
+                    Ok.
+
+    After SEND
+    Before PRINT:   Backup takes over from N + 1
+                    Print N+1 (new)
+
+                    Ok.
+
+    After PRINT     Backup takes over from N + 1
+                    Print N+1 (duplicate)
+                    STATE++
+                    Print N+2 (new)
+
+                    Ok
+
+
+
+*/
+
 package main
 
 import (
