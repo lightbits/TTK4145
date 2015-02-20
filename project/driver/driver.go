@@ -47,6 +47,11 @@ type io_event struct {
     is_set bool
 }
 
+type bit_state struct {
+    channel int
+    was_set bool
+}
+
 func poll(bits [N_FLOORS]bit_state, event chan io_event, edge edge_detect) {
     for {
         for i := 0; i < len(bits); i++ {
@@ -69,15 +74,76 @@ func poll(bits [N_FLOORS]bit_state, event chan io_event, edge edge_detect) {
     }
 }
 
-func SetMotorDirection(dir MotorDirection) {
-    if (dir == 0){
-        io_write_analog(MOTOR, 0);
-    } else if (dir > 0) {
-        io_clear_bit(MOTORDIR);
-        io_write_analog(MOTOR, 2800);
-    } else if (dir < 0) {
-        io_set_bit(MOTORDIR);
-        io_write_analog(MOTOR, 2800);
+func MotorUp() {
+    io_clear_bit(MOTORDIR)
+    io_write_analog(MOTOR, 2800)
+}
+
+func MotorDown() {
+    io_set_bit(MOTORDIR)
+    io_write_analog(MOTOR, 2800)
+}
+
+func MotorStop() {
+    io_write_analog(MOTOR, 0)
+}
+
+func SetButtonLamp(btn ButtonType, floor int, set bool) {
+    lights := up_lights
+    if floor >= N_FLOORS {
+        log.Fatal("Tried to set light on non-existent floor")
+    }
+
+    switch btn {
+    case ButtonUp:
+        lights = up_lights
+        if floor >= N_FLOORS - 1 {
+            log.Fatal("Tried to set light on non-existent floor")
+        }
+    case ButtonDown:
+        lights = down_lights
+        if floor == 0 {
+            log.Fatal("Tried to set light on non-existent floor")
+        }
+    case ButtonOut:
+        lights = out_lights
+    }
+
+    if set {
+        io_set_bit(lights[floor])
+    } else {
+        io_clear_bit(lights[floor])
+    }
+}
+
+func SetDoorOpenLamp(on bool) {
+    if on {
+        io_set_bit(LIGHT_DOOR_OPEN);
+    } else {
+        io_clear_bit(LIGHT_DOOR_OPEN);
+    }
+}
+
+func SetStopLamp(on bool) {
+    if on {
+        io_set_bit(LIGHT_STOP)
+    } else {
+        io_clear_bit(LIGHT_STOP);
+    }
+}
+
+func SetFloorIndicator(floor int) {
+    if (floor & 0x02 != 0) {
+        io_set_bit(LIGHT_FLOOR_IND1);
+    } else {
+        io_clear_bit(LIGHT_FLOOR_IND1);
+    }
+
+    if (floor & 0x01 != 0) {
+        io_set_bit(LIGHT_FLOOR_IND2);
+
+    } else {
+        io_clear_bit(LIGHT_FLOOR_IND2);
     }
 }
 
@@ -90,6 +156,27 @@ func Init(button_pressed chan ButtonEvent,
         log.Fatal("Failed to initialize driver")
     }
 
+    // Zero all floor button lamps
+    for i := 0; i < N_FLOORS; i++ {
+        if i != 0 {
+            SetButtonLamp(ButtonDown, i, false)
+        }
+        if i != N_FLOORS - 1 {
+            SetButtonLamp(ButtonUp, i, false)
+        }
+        SetButtonLamp(ButtonOut, i, false)
+    }
+
+    // Clear stop lamp, door open lamp, and set floor indicator to ground floor
+    SetDoorOpenLamp(false)
+    SetStopLamp(false)
+    SetFloorIndicator(0)
+
+    // Drive to bottom floor
+    MotorDown()
+    for io_read_bit(SENSOR_FLOOR1) != 1 { }
+    MotorStop()
+
     up_ch   := make(chan io_event)
     down_ch := make(chan io_event)
     out_ch  := make(chan io_event)
@@ -98,21 +185,21 @@ func Init(button_pressed chan ButtonEvent,
     obs_ch  := make(chan io_event)
 
     if (button_pressed != nil) {
-        go poll(UP_BUTTONS, up_ch, edge_detect_rising)
-        go poll(DOWN_BUTTONS, down_ch, edge_detect_rising)
-        go poll(OUT_BUTTONS, out_ch, edge_detect_rising)
+        go poll(up_buttons, up_ch, edge_detect_rising)
+        go poll(down_buttons, down_ch, edge_detect_rising)
+        go poll(out_buttons, out_ch, edge_detect_rising)
     }
 
     if (floor_reached != nil) {
-        go poll(FLOOR_SENSORS, flr_ch, edge_detect_rising)
+        go poll(floor_sensors, flr_ch, edge_detect_rising)
     }
 
     if (stop_pressed != nil) {
-        go poll(STOP_BUTTONS, stp_ch, edge_detect_rising)
+        go poll(stop_buttons, stp_ch, edge_detect_rising)
     }
 
     if (obstruction != nil) {
-        go poll(OBSTRUCTIONS, obs_ch, edge_detect_both)
+        go poll(obstructions, obs_ch, edge_detect_both)
     }
 
     for {

@@ -1,4 +1,7 @@
 package driver
+// #include "io.h"
+// #cgo LDFLAGS: -L. -lcomedi -lm
+import "C"
 
 const N_FLOORS = 4
 
@@ -57,120 +60,63 @@ const (
     LIGHT_UP4           = -1
 )
 
-type bit_state struct {
-    channel int
-    was_set bool
-}
-
-var UP_BUTTONS = [N_FLOORS]bit_state{
+var up_buttons = [N_FLOORS]bit_state{
     bit_state{BUTTON_UP1, false},
     bit_state{BUTTON_UP2, false},
     bit_state{BUTTON_UP3, false},
     bit_state{BUTTON_UP4, false}}
 
-var DOWN_BUTTONS = [N_FLOORS]bit_state{
+var down_buttons = [N_FLOORS]bit_state{
     bit_state{BUTTON_DOWN1, false},
     bit_state{BUTTON_DOWN2, false},
     bit_state{BUTTON_DOWN3, false},
     bit_state{BUTTON_DOWN4, false}}
 
-var OUT_BUTTONS = [N_FLOORS]bit_state{
+var out_buttons = [N_FLOORS]bit_state{
     bit_state{BUTTON_COMMAND1, false},
     bit_state{BUTTON_COMMAND2, false},
     bit_state{BUTTON_COMMAND3, false},
     bit_state{BUTTON_COMMAND4, false}}
 
-var FLOOR_SENSORS = [N_FLOORS]bit_state{
+var floor_sensors = [N_FLOORS]bit_state{
     bit_state{SENSOR_FLOOR1, false},
     bit_state{SENSOR_FLOOR2, false},
     bit_state{SENSOR_FLOOR3, false},
     bit_state{SENSOR_FLOOR4, false}}
 
-var OBSTRUCTIONS = [N_FLOORS]bit_state{
+var obstructions = [N_FLOORS]bit_state{
     bit_state{OBSTRUCTION, false}}
 
-var STOP_BUTTONS = [N_FLOORS]bit_state{
+var stop_buttons = [N_FLOORS]bit_state{
     bit_state{STOP, false}}
 
+var up_lights   = []int{LIGHT_UP1,      LIGHT_UP2,      LIGHT_UP3,      LIGHT_UP4}
+var down_lights = []int{LIGHT_DOWN1,    LIGHT_DOWN2,    LIGHT_DOWN3,    LIGHT_DOWN4}
+var out_lights  = []int{LIGHT_COMMAND1, LIGHT_COMMAND2, LIGHT_COMMAND3, LIGHT_COMMAND4}
+
+// TODO: interface with simulator.
+// TODO: pass in arg saying if we want real lift or simulator
 func io_init() bool {
-
-    for i := range(UP_BUTTONS) {
-        UP_BUTTONS[i].was_set = io_read_bit(UP_BUTTONS[i].channel) == 1
-    }
-
-    for i := range(DOWN_BUTTONS) {
-        DOWN_BUTTONS[i].was_set = io_read_bit(DOWN_BUTTONS[i].channel) == 1
-    }
-
-    for i := range(OUT_BUTTONS) {
-        OUT_BUTTONS[i].was_set = io_read_bit(OUT_BUTTONS[i].channel) == 1
-    }
-
-    for i := range(FLOOR_SENSORS) {
-        FLOOR_SENSORS[i].was_set = io_read_bit(FLOOR_SENSORS[i].channel) == 1
-    }
-
-    for i := range(OBSTRUCTIONS) {
-        OBSTRUCTIONS[i].was_set = io_read_bit(OBSTRUCTIONS[i].channel) == 1
-    }
-
-    for i := range(STOP_BUTTONS) {
-        STOP_BUTTONS[i].was_set = io_read_bit(STOP_BUTTONS[i].channel) == 1
-    }
-
-    return true
+    status := C.io_init()
+    return status != 0
 }
 
 func io_set_bit(channel int) {
-
+    C.io_set_bit(C.int(channel))
 }
 
 func io_clear_bit(channel int) {
-
+    C.io_clear_bit(C.int(channel))
 }
 
 func io_write_analog(channel, value int) {
-
+    C.io_write_analog(C.int(channel), C.int(value))
 }
 
 func io_read_bit(channel int) int {
-    return 1
+    return int(C.io_read_bit(C.int(channel)))
 }
 
 func io_read_analog(channel int) int {
-    return 0
+    return int(C.io_read_analog(C.int(channel)))
 }
-
-
-// package driver
-
-// // #include "io.h"
-// // #cgo LDFLAGS: -L. -lcomedi -lm
-// import "C"
-
-// // TODO: interface with simulator.
-// // TODO: pass in arg saying if we want real lift or simulator
-// func io_init() bool {
-//     status := C.io_init()
-//     return status != 0
-// }
-
-// func io_set_bit(channel int) {
-//     C.io_set_bit(C.int(channel))
-// }
-
-// func io_clear_bit(channel int) {
-//     C.io_clear_bit(C.int(channel))
-// }
-
-// func io_write_analog(channel, value int) {
-//     C.io_write_analog(C.int(channel), C.int(value))
-// }
-
-// func io_read_bit(channel int) int {
-//     return int(C.io_read_bit(C.int(channel)))
-// }
-
-// func io_read_analog(channel int) int {
-//     return int(C.io_read_analog(C.int(channel)))
-// }
