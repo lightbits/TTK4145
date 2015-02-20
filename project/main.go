@@ -152,6 +152,18 @@ func main() {
         case btn := <- button_pressed:
             if btn.Floor == 0 {
                 driver.MotorUp()
+                driver.SetButtonLamp(driver.ButtonOut, 0, true)
+                driver.SetButtonLamp(driver.ButtonOut, 1, true)
+                driver.SetButtonLamp(driver.ButtonOut, 2, true)
+                driver.SetButtonLamp(driver.ButtonOut, 3, true)
+                driver.SetButtonLamp(driver.ButtonUp, 0, true)
+                driver.SetButtonLamp(driver.ButtonUp, 1, true)
+                driver.SetButtonLamp(driver.ButtonUp, 2, true)
+                driver.SetButtonLamp(driver.ButtonDown, 1, true)
+                driver.SetButtonLamp(driver.ButtonDown, 2, true)
+                driver.SetButtonLamp(driver.ButtonDown, 3, true)
+                driver.SetDoorOpenLamp(true)
+                driver.SetStopLamp(true)
             } else if btn.Floor == 1 {
                 driver.MotorDown()
             } else if btn.Floor == 2 {
