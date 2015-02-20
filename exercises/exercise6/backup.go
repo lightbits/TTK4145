@@ -22,7 +22,7 @@ type Message struct {
 var NullState State = State{0}
 
 func ListenForMessages(incoming_message chan Message) {
-    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:33445")
+    local, err := net.ResolveUDPAddr("udp", ":33445") // Change to 127.0.0.1 to work on laptop
     if err != nil {
         log.Fatal(err)
     }
@@ -42,6 +42,23 @@ func ListenForMessages(incoming_message chan Message) {
         m := Message{}
         binary.Read(b, binary.BigEndian, &m)
         incoming_message <- m
+    }
+}
+
+func RestartMasterProcess(initial_state State) {
+    // Linux
+    arg := fmt.Sprintf("go run primary.go %d", initial_state.Tick)
+    cmd := exec.Command("gnome-terminal", "-x", "sh", "-c", arg)
+    err := cmd.Run()
+
+    // Windows
+    // arg0 := "C:/Dokumenter/ttk4145/exercises/exercise6/start_primary.bat"
+    // arg1 := fmt.Sprintf("%d", initial_state.Tick)
+    // cmd := exec.Command("cmd", "/C", "start", arg0, arg1)
+    // err := cmd.Start()
+
+    if err != nil {
+        log.Fatal(err)
     }
 }
 
@@ -75,13 +92,7 @@ func main() {
         case <- time.After(7 * time.Second):
             fmt.Println("BACKUP Primary loss detected. Take over @", state.Tick)
             fmt.Println("BACKUP PRINT", state.Tick)
-            arg0 := "C:/Dokumenter/ttk4145/exercises/exercise6/start_primary.bat"
-            arg1 := fmt.Sprintf("%d", state.Tick)
-            cmd := exec.Command("cmd", "/C", "start", arg0, arg1)
-            err := cmd.Start()
-            if err != nil {
-                log.Fatal(err)
-            }
+            RestartMasterProcess(state)
             return
         case msg := <- incoming_message:
             state = msg.PrimaryState

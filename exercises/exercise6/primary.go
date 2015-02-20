@@ -85,7 +85,7 @@ type Message struct {
 var NullState State = State{0}
 
 func SendMessages(outgoing_message chan Message) {
-    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:44556")
+    local, err := net.ResolveUDPAddr("udp", ":44556") // Change to 127.0.0.1 to work on laptop
     if err != nil {
         log.Fatal(err)
     }
@@ -117,6 +117,21 @@ func Log(str string) {
     log.Println(str)
 }
 
+func LaunchBackupProcess() {
+    // Windows
+    // arg := "C:/Dokumenter/ttk4145/exercises/exercise6/start_backup.bat"
+    // cmd := exec.Command("cmd", "/C", "start", arg)
+    // err := cmd.Start()
+
+    // Linux
+    cmd := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run backup.go")
+    err := cmd.Run()
+
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
 func main() {
     // Redirect log output
     f, err := os.OpenFile("log.txt", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
@@ -130,13 +145,7 @@ func main() {
     outgoing_message := make(chan Message)
     go SendMessages(outgoing_message)
 
-    // Launch backup process
-    arg := "C:/Dokumenter/ttk4145/exercises/exercise6/start_backup.bat"
-    cmd := exec.Command("cmd", "/C", "start", arg)
-    err = cmd.Start()
-    if err != nil {
-        log.Fatal(err)
-    }
+    LaunchBackupProcess()
 
     // Launch master process
     Log("Launching master process")
