@@ -19,7 +19,7 @@ Todo
 *   Implement timeouts
 *   Implement network module
 *   Implement driver
-    - Interchangeable with fake/test io
+    - Interchangeable with fake/test io (add define's in c header)
 
 *   Implement client
     - Send client updates to primary
