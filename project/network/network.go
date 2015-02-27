@@ -6,6 +6,8 @@ import (
 )
 
 type MasterUpdate struct {
+    // Protocol uint32
+    // Data     []byte
     ActiveOrders string
 }
 
@@ -26,6 +28,7 @@ func sendClientUpdates(outgoing chan ClientUpdate, conn *net.UDPConn) {
 }
 
 func listenForMasterUpdates(incoming chan MasterUpdate, conn *net.UDPConn) {
+
     for {
         data := make([]byte, 1024)
         read_bytes, _, err := conn.ReadFromUDP(data)

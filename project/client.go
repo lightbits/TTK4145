@@ -6,12 +6,13 @@ import (
     "./network"
 )
 
+const CLIENT_UPDATE_INTERVAL = 1 * time.Second
+
 func main() {
     outgoing := make(chan network.ClientUpdate)
     incoming := make(chan network.MasterUpdate)
     go network.InitClient(outgoing, incoming)
 
-    const CLIENT_UPDATE_INTERVAL = 1 * time.Second
     ticker := time.NewTicker(CLIENT_UPDATE_INTERVAL)
 
     for {
