@@ -1,58 +1,82 @@
 package main
 
 import (
-    "time"
+    "net"
     "log"
 )
 
-type Message struct {
-    Blocks
+type OrderType int32
+const (
+    OrderUp OrderType = iota
+    OrderDown
+    OrderOut
+)
+
+type LiftID struct {
+    IP   uint32
 }
 
-type packet struct {
-    Protocol     uint32
-    Length       uint32
-    Content      []byte
-    EndDelimiter uint32
+type MasterOrder struct {
+    Floor   int32
+    Type    OrderType
+    TakenBy LiftID
 }
 
-// The reason we use a channel for OUTGOING messages
-// is because the network might be busy reading a packet,
-// but we don't want to block?
-func NetworkInit(outgoing_messages chan Message,
-                 incoming_messages chan Message) {
+type MasterUpdate struct {
+    ActiveOrders []MasterOrder
+}
 
-    SendChannel := make(chan network_message)
-    RecvChannel := make(chan network_message)
-    go FakeNetwork(SendChannel, RecvChannel)
+type ClientRequest struct {
+    Floor int32
+    Type  OrderType
+    Done  bool
+}
+
+type ClientUpdate struct {
+    Requests []ClientRequest
+}
+
+func ListenForMasterUpdates(incoming chan MasterUpdate) {
+
+}
+
+func SendMasterUpdates(outgoing chan MasterUpdate, conn *net.UDPConn) {
+
+}
+
+func Master() {
+    Connections  []net.UDPConn
+    ActiveOrders []MasterOrder
+
+    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    conn, err := net.ListenUDP("udp", local)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer conn.Close()
+
+    // The connection conn can now be used to read and
+    // write messages.
+
+    data := make([]byte, 1024) // Let's hope this is enough!
 
     for {
-        select {
-        case Request := <- OutgoingUpdate:
-
-            // TODO: Send request to master over UDP
-        case Packet := <- RecvChannel:
-            // Parse packet, verify protocol
-            // acceptance test
-
-            // Dummy code
-            OrderA := order{
-                FromFloor: 0,
-                ToFloor: 1,
-                Type: order_up,
-                TakenBy: lift_id{0xabad1dea, 0xbeef},
-            }
-
-            OrderB := order{
-                FromFloor: 1,
-                ToFloor: 2,
-                Type: order_down,
-                TakenBy: lift_id{0xaabababa, 0xbeef},
-            }
-
-            PendingOrders := []order{OrderA, OrderB}
-            Update := master_update{PendingOrders}
-            IncomingUpdate <- Update
+        read_bytes, sender, err := conn.ReadFromUDP(data)
+        if err != nil {
+            log.Fatal(err)
         }
+
+        // Send a reply
+        log.Println("Read", read_bytes, "bytes from", sender)
+        conn.WriteToUDP([]byte("Server says: Gotcha!"), sender)
     }
+}
+
+func main() {
+
 }
