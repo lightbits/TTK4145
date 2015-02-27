@@ -1,46 +1,15 @@
 package main
 
 import (
-    "net"
-    "log"
     "fmt"
     "time"
+    "./network"
 )
 
-type MasterUpdate struct {
-    ActiveOrders string
-}
-
-type ClientUpdate struct {
-    Request string
-}
-
-func SendClientUpdates(outgoing chan ClientUpdate, conn *net.UDPConn) {
-    for {
-        update := <- outgoing
-        remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
-        if err != nil {
-            log.Fatal(err)
-        }
-        conn.WriteToUDP([]byte(update.Request), remote)
-    }
-}
-
 func main() {
-    local, err := net.ResolveUDPAddr("udp", ":54321")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    conn, err := net.ListenUDP("udp", local)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    defer conn.Close()
-
-    outgoing := make(chan ClientUpdate)
-    go SendClientUpdates(outgoing, conn)
+    outgoing := make(chan network.ClientUpdate)
+    incoming := make(chan network.MasterUpdate)
+    go network.InitClient(outgoing, incoming)
 
     const CLIENT_UPDATE_INTERVAL = 1 * time.Second
     ticker := time.NewTicker(CLIENT_UPDATE_INTERVAL)
@@ -49,7 +18,10 @@ func main() {
         select {
         case <- ticker.C:
             fmt.Println("Client send update")
-            outgoing <- ClientUpdate{"Hello master!"}
+            outgoing <- network.ClientUpdate{Request: "Hello master!"}
+
+        case update := <- incoming:
+            fmt.Println("Master said:", update.ActiveOrders)
         }
     }
 }

@@ -1,54 +1,100 @@
-package main
+package network
 
 import (
-    "time"
+    "net"
     "log"
 )
 
-type network_message struct {
-    Protocol     uint32
-    Length       uint32
-    UserData     []byte
-    EndDelimiter uint32
+type MasterUpdate struct {
+    ActiveOrders string
 }
 
-// The reason we use a channel for OUTGOING messages
-// is because the network might be busy reading a packet,
-// but we don't want to block?
-func NetworkInit(OutgoingUpdate chan client_update,
-                 IncomingUpdate chan master_update) {
+type ClientUpdate struct {
+    Sender  *net.UDPAddr
+    Request string
+}
 
-    SendChannel := make(chan network_message)
-    RecvChannel := make(chan network_message)
-    go FakeNetwork(SendChannel, RecvChannel)
-
+func sendClientUpdates(outgoing chan ClientUpdate, conn *net.UDPConn) {
     for {
-        select {
-        case Request := <- OutgoingUpdate:
-
-            // TODO: Send request to master over UDP
-        case Packet := <- RecvChannel:
-            // Parse packet, verify protocol
-            // acceptance test
-
-            // Dummy code
-            OrderA := order{
-                FromFloor: 0,
-                ToFloor: 1,
-                Type: order_up,
-                TakenBy: lift_id{0xabad1dea, 0xbeef},
-            }
-
-            OrderB := order{
-                FromFloor: 1,
-                ToFloor: 2,
-                Type: order_down,
-                TakenBy: lift_id{0xaabababa, 0xbeef},
-            }
-
-            PendingOrders := []order{OrderA, OrderB}
-            Update := master_update{PendingOrders}
-            IncomingUpdate <- Update
+        update := <- outgoing
+        remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
+        if err != nil {
+            log.Fatal(err)
         }
+        conn.WriteToUDP([]byte(update.Request), remote)
     }
+}
+
+func listenForMasterUpdates(incoming chan MasterUpdate, conn *net.UDPConn) {
+    for {
+        data := make([]byte, 1024)
+        read_bytes, _, err := conn.ReadFromUDP(data)
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        // TODO: Validate incoming packet
+        // Check protocol etc
+
+        incoming <- MasterUpdate{string(data[:read_bytes])}
+    }
+}
+
+func listenForClientUpdates(incoming chan ClientUpdate, conn *net.UDPConn) {
+    for {
+        data := make([]byte, 1024)
+        read_bytes, sender_addr, err := conn.ReadFromUDP(data)
+        if err != nil {
+            log.Fatal(err)
+        }
+        incoming <- ClientUpdate{sender_addr, string(data[:read_bytes])}
+    }
+}
+
+func sendMasterUpdates(outgoing chan MasterUpdate, conn *net.UDPConn) {
+    for {
+        update := <- outgoing
+
+        // TODO: Should we send to each connection seperately instead?
+        // For now: Broadcast
+        remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:54321")
+        if err != nil {
+            log.Fatal(err)
+        }
+        conn.WriteToUDP([]byte(update.ActiveOrders), remote)
+    }
+}
+
+func InitClient(outgoing chan ClientUpdate, incoming chan MasterUpdate) {
+    local, err := net.ResolveUDPAddr("udp", ":54321")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    conn, err := net.ListenUDP("udp", local)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer conn.Close()
+
+    go sendClientUpdates(outgoing, conn)
+    listenForMasterUpdates(incoming, conn)
+}
+
+func InitMaster(outgoing chan MasterUpdate, incoming chan ClientUpdate) {
+    local, err := net.ResolveUDPAddr("udp", ":20012")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    conn, err := net.ListenUDP("udp", local)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer conn.Close()
+
+    go sendMasterUpdates(outgoing, conn)
+    listenForClientUpdates(incoming, conn)
 }
