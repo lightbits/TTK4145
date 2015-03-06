@@ -24,8 +24,8 @@ func NetworkMockup() {
 
     // Wrap into packet
     const CL_STATUS_PROTOCOL = 0xdeadbeef
-    packet := network_message{Protocol: CL_STATUS_PROTOCOL, 
-                              Length: uint32(b.Len()), 
+    packet := network_message{Protocol: CL_STATUS_PROTOCOL,
+                              Length: uint32(b.Len()),
                               UserData: b.Bytes()}
 
     // Send over network....
@@ -44,7 +44,7 @@ func NetworkMockup() {
 
     log.Println("Received a client status update")
     log.Printf("Floor: %d Type: %d TakenBy: %d.%d.%d.%d\n",
-               r.Floor, r.Type, 
+               r.Floor, r.Type,
                (r.TakenBy.IPAddress >> 24) & 0xff,
                (r.TakenBy.IPAddress >> 16) & 0xff,
                (r.TakenBy.IPAddress >> 8) & 0xff,
@@ -88,3 +88,12 @@ func StructMagic() {
     // log.Printf("%x %f\n", Thing.ID, Thing.TTL)
 
 }
+
+// func (o Order) ByteSerialize() *bytes.Buffer {
+//     b := &bytes.Buffer{}
+//     err := binary.Write(b, binary.BigEndian, o)
+//     if err != nil {
+//         fmt.Println(err)
+//     }
+//     return b
+// }

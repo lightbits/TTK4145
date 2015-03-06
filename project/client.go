@@ -10,20 +10,22 @@ import (
 const CLIENT_UPDATE_INTERVAL = 1 * time.Second
 
 type Status struct {
-    LiftCommands string
+    Data string
 }
 
 type MastersTodos struct {
-    LitLamps string
-    // TargetFloor string
+    Data string
 }
 
 func broadcastStatusToMaster(conn *net.UDPConn, status Status) {
-    remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
+    remote, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
     if err != nil {
         log.Fatal(err)
     }
-    conn.WriteToUDP([]byte(status.LiftCommands), remote)
+    _, err = conn.WriteToUDP([]byte(status.Data), remote)
+    if err != nil {
+        log.Fatal(err)
+    }
 }
 
 func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MastersTodos) {
@@ -42,7 +44,7 @@ func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MastersTodos) {
 }
 
 func main() {
-    local, err := net.ResolveUDPAddr("udp", ":54321")
+    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:54321")
     if err != nil {
         log.Fatal(err)
     }
@@ -64,7 +66,7 @@ func main() {
             broadcastStatusToMaster(conn, Status{"Hello"})
 
         case update := <- incoming:
-            fmt.Println("Master said:", update.LitLamps)
+            fmt.Println("Master said:", update.Data)
         }
     }
 }
