@@ -1,6 +1,7 @@
 package driver
 // #include "io.h"
-// #cgo LDFLAGS: -L. -lcomedi -lm
+// #cgo CFLAGS: -std=c99
+// #cgo LDFLAGS: -L. /home/simeh/Documents/ttk4145/project/libs/libsimulation_elevator.a /home/simeh/Documents/ttk4145/project/libs/libphoboss.a -lcomedi -lm
 import "C"
 
 const N_FLOORS = 4
@@ -94,8 +95,6 @@ var up_lights   = []int{LIGHT_UP1,      LIGHT_UP2,      LIGHT_UP3,      LIGHT_UP
 var down_lights = []int{LIGHT_DOWN1,    LIGHT_DOWN2,    LIGHT_DOWN3,    LIGHT_DOWN4}
 var out_lights  = []int{LIGHT_COMMAND1, LIGHT_COMMAND2, LIGHT_COMMAND3, LIGHT_COMMAND4}
 
-// TODO: interface with simulator.
-// TODO: pass in arg saying if we want real lift or simulator
 func io_init() bool {
     status := C.io_init()
     return status != 0

@@ -32,7 +32,7 @@ Master:
                 pending_orders.add(cmd)
 
         for f in u.cleared_floors:
-            RemoveAllOrdersAtFloor(f)
+            RemoveAllOrdersAtFloor(pending_orders, f)
 
     case <- time to send update:
 
@@ -46,8 +46,17 @@ Master:
 
         Send(backup.address, pending_orders)
 
+WaitForMaster:
+    FinishCurrentOrders()
+        case <- master update:
+            go Client()
+
 Client:
     for select:
+    case f <- reached floor
+        LiftReachedFloor(f)
+        SetFloorIndicator(f)
+
     case b <- order button press
         status.lift_commands.append(b)
 
@@ -64,16 +73,16 @@ Client:
                 if cmd.floor == lamp.floor:
                     status.lift_commands.remove(cmd)
 
-            for f in status.cleared_floors:
-                if f == lamp.floor:
-                    status.cleared_floors.remove(f)
-
             SetButtonLamp(lamp)
+
+        for f in status.cleared_floors:
+            if f not in u.lamps:
+                status.cleared_floors.remove(f)
 
         SetTargetFloor(u.target_floor)
 
     case <- master timed out
-        GoSoloAndNeverReconnect()
+        WaitForMaster()
 
     case <- time to send update
         Send(master.address, status)

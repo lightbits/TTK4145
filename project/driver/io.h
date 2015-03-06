@@ -5,6 +5,11 @@
 // 2006, Martin Korsgaard
 #ifndef __INCLUDE_IO_H__
 #define __INCLUDE_IO_H__
+#define ET_simulation 0
+#define ET_comedi 1
+
+#define ELEVATOR_TYPE ET_comedi  // Use real lift
+// #define ELEVATOR_TYPE ET_simulation // Use simulator
 
 // Return 0 on init failure
 int  io_init();
