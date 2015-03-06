@@ -1,0 +1,128 @@
+
+Functionality
+-------------
+
+DistributeWork:
+    for o in orders : o.taken_by == none:
+        o.taken_by = ClosestLift(o.floor)
+
+    for l in lifts:
+        own_orders = [o in orders where o.taken_by == l.id]
+        if l.last_passed_floor == l.target_floor:
+            l.target_floor = ClosestOrderTo(orders, l.last_passed_floor)
+        else:
+            l.target_floor = ClosestOrderAlong(orders, l.last_passed_floor, l.target_floor)
+
+Master:
+    for select:
+    case c <- client timed out:
+
+        for o in orders : o.taken_by == c.id and o.type != ORDER_OUT:
+            o.taken_by = None
+
+        if c.id == backup.id:
+            backup = FindBackup(clients)
+
+    case u <- received update:
+        if u.sender not in clients:
+            clients.add(u.sender)
+
+        for cmd in u.lift_commands:
+            if cmd not in pending_orders:
+                pending_orders.add(cmd)
+
+        for f in u.cleared_floors:
+            RemoveAllOrdersAtFloor(f)
+
+    case <- time to send update:
+
+        DistributeWork()
+
+        for l in lifts:
+            data = {}
+            data.lamps = [o.floor for o in pending_orders]
+            data.target_floor = l.target_floor
+            Send(l.address, data)
+
+        Send(backup.address, pending_orders)
+
+Client:
+    for select:
+    case b <- order button press
+        status.lift_commands.append(b)
+
+    case f <- cleared target floor:
+        status.cleared_floors.add(f)
+
+    case u <- received update
+        master.address = u.sender
+
+        ClearAllLamps()
+
+        for lamp in u.lamps:
+            for cmd in status.lift_commands:
+                if cmd.floor == lamp.floor:
+                    status.lift_commands.remove(cmd)
+
+            for f in status.cleared_floors:
+                if f == lamp.floor:
+                    status.cleared_floors.remove(f)
+
+            SetButtonLamp(lamp)
+
+        SetTargetFloor(u.target_floor)
+
+    case <- master timed out
+        GoSoloAndNeverReconnect()
+
+    case <- time to send update
+        Send(master.address, status)
+
+    case <- stop button press
+        ...
+    case <- obstruction changed
+        ...
+
+Backup:
+    for select:
+        case u <- received update:
+            backup.state = u.state
+        case <- master timed out:
+            go Master(backup.state)
+            return
+
+
+Data structures server and client
+---------------------------------
+CommandType {Up, Down, Out}
+
+LiftCommand
+    Type           CommandType
+    Floor          int
+
+ClientToMasterUpdate
+    lift_commands  []LiftCommand
+    cleared_floors []int
+
+Lamp
+    Type           CommandType
+    Floor          int
+
+MasterToClientUpdate
+    lamps          []Lamp
+    target_floor   int
+
+Server-side only:
+-----------------
+
+Order
+    type           CommandType
+    floor          int
+    taken_by       string
+
+Lift
+    id             string
+    address        UDPAddress
+    target_floor   int
+    last_passed    int
+    timer          Timer

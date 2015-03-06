@@ -6,6 +6,29 @@ import (
     "./network"
 )
 
+/*
+What does the client minimally need to send:
+    * Keypresses
+    * Timestamp (uint32 that is incremented per io event) per keypress
+    * Last passed floor
+
+What does the master minimally need to send to a client:
+    * The next floor to go to
+    * The button lamps to light
+    * Acknowledged timestamps for io events????
+      One for each?
+
+Oh wait!!!!!!!
+
+    Given the button lamps to light up, WE KNOW WHICH BUTTON PRESSES
+    THE MASTER HAS REGISTERED!
+
+    We don't need acknowledge numbers, the button lamps serve as
+    ACKs!!!
+
+    Then we don't need timestamps either!
+*/
+
 const CLIENT_UPDATE_INTERVAL = 1 * time.Second
 
 func main() {
