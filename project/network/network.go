@@ -5,18 +5,24 @@ import (
     "log"
 )
 
-type MasterUpdate struct {
-    // Protocol uint32
-    // Data     []byte
+type OrderButton struct {
+    Type  int32
+    Floor int32
+}
+
+type MasterToClientUpdate struct {
     ActiveOrders string
+    // Lamps       []OrderButton
+    // TargetFloor int
 }
 
-type ClientUpdate struct {
-    Sender  *net.UDPAddr
+type ClientToMasterUpdate struct {
     Request string
+    // LiftCommands  []OrderButton
+    // ClearedFloors []int
 }
 
-func sendClientUpdates(outgoing chan ClientUpdate, conn *net.UDPConn) {
+func broadcastClientUpdateToMaster(outgoing chan ClientToMasterUpdate, conn *net.UDPConn) {
     for {
         update := <- outgoing
         remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
@@ -27,7 +33,7 @@ func sendClientUpdates(outgoing chan ClientUpdate, conn *net.UDPConn) {
     }
 }
 
-func listenForMasterUpdates(incoming chan MasterUpdate, conn *net.UDPConn) {
+func listenForUpdatesFromMaster(incoming chan MasterToClientUpdate, conn *net.UDPConn) {
 
     for {
         data := make([]byte, 1024)
@@ -39,36 +45,29 @@ func listenForMasterUpdates(incoming chan MasterUpdate, conn *net.UDPConn) {
         // TODO: Validate incoming packet
         // Check protocol etc
 
-        incoming <- MasterUpdate{string(data[:read_bytes])}
+        incoming <- MasterToClientUpdate{string(data[:read_bytes])}
     }
 }
 
-func listenForClientUpdates(incoming chan ClientUpdate, conn *net.UDPConn) {
+func listenForUpdatesFromClient(incoming chan ClientToMasterUpdate, conn *net.UDPConn) {
     for {
         data := make([]byte, 1024)
         read_bytes, sender_addr, err := conn.ReadFromUDP(data)
         if err != nil {
             log.Fatal(err)
         }
-        incoming <- ClientUpdate{sender_addr, string(data[:read_bytes])}
+        incoming <- ClientToMasterUpdate{sender_addr, string(data[:read_bytes])}
     }
 }
 
-func sendMasterUpdates(outgoing chan MasterUpdate, conn *net.UDPConn) {
+func sendUpdatesToClient(outgoing chan MasterToClientUpdate, conn *net.UDPConn) {
     for {
         update := <- outgoing
-
-        // TODO: Should we send to each connection seperately instead?
-        // For now: Broadcast
-        remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:54321")
-        if err != nil {
-            log.Fatal(err)
-        }
-        conn.WriteToUDP([]byte(update.ActiveOrders), remote)
+        conn.WriteToUDP([]byte(update.ActiveOrders), update.Destination)
     }
 }
 
-func InitClient(outgoing chan ClientUpdate, incoming chan MasterUpdate) {
+func InitClient(outgoing chan ClientToMasterUpdate, incoming chan MasterToClientUpdate) {
     local, err := net.ResolveUDPAddr("udp", ":54321")
     if err != nil {
         log.Fatal(err)
@@ -81,11 +80,11 @@ func InitClient(outgoing chan ClientUpdate, incoming chan MasterUpdate) {
 
     defer conn.Close()
 
-    go sendClientUpdates(outgoing, conn)
-    listenForMasterUpdates(incoming, conn)
+    go sendClientUpdatesToMaster(outgoing, conn)
+    listenForUpdatesFromMaster(incoming, conn)
 }
 
-func InitMaster(outgoing chan MasterUpdate, incoming chan ClientUpdate) {
+func InitMaster(outgoing chan MasterToClientUpdate, incoming chan ClientToMasterUpdate) {
     local, err := net.ResolveUDPAddr("udp", ":20012")
     if err != nil {
         log.Fatal(err)
@@ -98,6 +97,6 @@ func InitMaster(outgoing chan MasterUpdate, incoming chan ClientUpdate) {
 
     defer conn.Close()
 
-    go sendMasterUpdates(outgoing, conn)
-    listenForClientUpdates(incoming, conn)
+    go sendUpdateToClient(outgoing, conn)
+    listenForUpdatesFromClient(incoming, conn)
 }
