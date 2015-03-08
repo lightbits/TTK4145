@@ -4,6 +4,8 @@ import (
     "fmt"
     "time"
     "net"
+    // "bytes"
+    // "encoding/binary"
     "log"
 )
 
@@ -13,7 +15,12 @@ type Status struct {
     Data string
 }
 
-type MastersTodos struct {
+type OrderButton struct {
+    Floor int32
+    Type  int32
+}
+
+type MasterToClient struct {
     Data string
 }
 
@@ -28,7 +35,7 @@ func broadcastStatusToMaster(conn *net.UDPConn, status Status) {
     }
 }
 
-func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MastersTodos) {
+func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MasterToClient) {
     for {
         data := make([]byte, 1024)
         read_bytes, _, err := conn.ReadFromUDP(data)
@@ -39,7 +46,12 @@ func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MastersTodos) {
         // TODO: Validate incoming packet
         // Check protocol etc
 
-        incoming <- MastersTodos{string(data[:read_bytes])}
+        // b := bytes.NewBuffer(data[:read_bytes])
+        // r := MasterToClient{}
+        // binary.Read(b, binary.BigEndian, &r)
+        r := MasterToClient{string(data[:read_bytes])}
+
+        incoming <- r
     }
 }
 
@@ -55,7 +67,7 @@ func main() {
     }
 
     defer conn.Close()
-    incoming := make(chan MastersTodos)
+    incoming := make(chan MasterToClient)
     go getUpdatesFromMaster(conn, incoming)
     ticker := time.NewTicker(CLIENT_UPDATE_INTERVAL)
 

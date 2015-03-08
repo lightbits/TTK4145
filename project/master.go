@@ -3,6 +3,8 @@ package main
 import (
     "fmt"
     "time"
+    // "bytes"
+    // "encoding/binary"
     "log"
     "net"
 )
@@ -15,12 +17,17 @@ type Client struct {
     Timer   *time.Timer
 }
 
+type OrderButton struct {
+    Floor int32
+    Type  int32
+}
+
 type IncomingClientStatus struct {
     SenderAddress *net.UDPAddr
     Data string
 }
 
-type ClientTodo struct {
+type MasterToClient struct {
     Data string
 }
 
@@ -33,7 +40,7 @@ func ListenForClientTimeout(client *Client, timeout chan Client) {
     }
 }
 
-func listenForIncomingClientStatuses(conn *net.UDPConn, incoming chan IncomingClientStatus) {
+func listenForClientStatus(conn *net.UDPConn, incoming chan IncomingClientStatus) {
     for {
         data := make([]byte, 1024)
         read_bytes, client_addr, err := conn.ReadFromUDP(data)
@@ -44,8 +51,18 @@ func listenForIncomingClientStatuses(conn *net.UDPConn, incoming chan IncomingCl
     }
 }
 
-func sendTodosToClient(conn *net.UDPConn, todo ClientTodo, destination *net.UDPAddr) {
-    conn.WriteToUDP([]byte(todo.Data), destination)
+func sendToClient(conn *net.UDPConn, client_addr *net.UDPAddr, packet MasterToClient) {
+    // b := &bytes.Buffer{}
+    // b1 := active_orders[0].ByteSerialize().Bytes()
+    // b2 := active_orders[1].ByteSerialize().Bytes()
+    // fmt.Printf("%x\n", append(b1[:], b2[:]...))
+    // err := binary.Write(b, binary.BigEndian, packet.Data)
+    // if err != nil {
+    //     log.Fatal(err)
+    // }
+    // log.Printf("%x\n", b.Bytes())
+    // conn.WriteToUDP(b.Bytes(), client_addr)
+    conn.WriteToUDP([]byte(packet.Data), client_addr)
 }
 
 func main() {
@@ -73,7 +90,7 @@ func main() {
     //     TakenBy: 0xabad1dea}
 
     incoming := make(chan IncomingClientStatus)
-    go listenForIncomingClientStatuses(conn, incoming)
+    go listenForClientStatus(conn, incoming)
 
     client_timeout := make(chan Client)
     ticker := time.NewTicker(MASTER_UPDATE_INTERVAL)
@@ -99,13 +116,12 @@ func main() {
 
         case <- ticker.C:
 
-            // Write to byte array
-            // b1 := active_orders[0].ByteSerialize().Bytes()
-            // b2 := active_orders[1].ByteSerialize().Bytes()
-            // fmt.Printf("%x\n", append(b1[:], b2[:]...))
-
             for _, client := range(clients) {
-                sendTodosToClient(conn, ClientTodo{"lamps lamps"}, client.Address)
+                var data MasterToClient
+                data.Data = "Hey ho!"
+                // data.LitLamps = []OrderButton{OrderButton{1, 1}, OrderButton{2, 0}}
+                // data.TargetFloor = 5
+                sendToClient(conn, client.Address, data)
             }
             fmt.Println("MASTER send update")
 
