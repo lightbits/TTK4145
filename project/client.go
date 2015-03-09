@@ -4,8 +4,6 @@ import (
     "fmt"
     "time"
     "net"
-    // "bytes"
-    // "encoding/binary"
     "log"
 )
 
@@ -42,13 +40,6 @@ func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MasterToClient) {
         if err != nil {
             log.Fatal(err)
         }
-
-        // TODO: Validate incoming packet
-        // Check protocol etc
-
-        // b := bytes.NewBuffer(data[:read_bytes])
-        // r := MasterToClient{}
-        // binary.Read(b, binary.BigEndian, &r)
         r := MasterToClient{string(data[:read_bytes])}
 
         incoming <- r

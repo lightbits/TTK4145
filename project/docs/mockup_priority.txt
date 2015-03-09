@@ -2,6 +2,10 @@
 Functionality
 -------------
 
+TODO:
+    for o in orders : o.taken_by == none && o.type != OUT:
+        o.taken_by = ClosestLift(o.floor)
+
 DistributeWork:
     for o in orders : o.taken_by == none:
         o.taken_by = ClosestLift(o.floor)
@@ -48,8 +52,12 @@ Master:
 
 WaitForMaster:
     FinishCurrentOrders()
+    select {
         case <- master update:
             go Client()
+        case <- timeout:
+            Shutdown()
+    }
 
 Client:
     for select:

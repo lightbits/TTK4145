@@ -5,98 +5,83 @@ import (
     "log"
 )
 
-type OrderButton struct {
-    Type  int32
-    Floor int32
+type ClientRequest struct {
+    Data string
 }
 
-type MasterToClientUpdate struct {
-    ActiveOrders string
-    // Lamps       []OrderButton
-    // TargetFloor int
+type MasterResponse struct {
+    Sender
+    Data string
 }
 
-type ClientToMasterUpdate struct {
-    Request string
-    // LiftCommands  []OrderButton
-    // ClearedFloors []int
+type Client struct {
+    ID string
 }
 
-func broadcastClientUpdateToMaster(outgoing chan ClientToMasterUpdate, conn *net.UDPConn) {
-    for {
-        update := <- outgoing
-        remote, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
-        if err != nil {
-            log.Fatal(err)
-        }
-        conn.WriteToUDP([]byte(update.Request), remote)
-    }
-}
-
-func listenForUpdatesFromMaster(incoming chan MasterToClientUpdate, conn *net.UDPConn) {
-
+func listenForMaster(socket *net.UDPConn, incoming chan MasterResponse) {
     for {
         data := make([]byte, 1024)
         read_bytes, _, err := conn.ReadFromUDP(data)
         if err != nil {
             log.Fatal(err)
         }
-
-        // TODO: Validate incoming packet
-        // Check protocol etc
-
-        incoming <- MasterToClientUpdate{string(data[:read_bytes])}
+        incoming <- MasterResponse{string(data[:read_bytes])}
     }
 }
 
-func listenForUpdatesFromClient(incoming chan ClientToMasterUpdate, conn *net.UDPConn) {
+func ClientWorker(incoming chan MasterResponse, outgoing chan ClientRequest) {
+    client, err := net.ResolveUDPAddr("udp", "127.0.0.1:54321")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    socket, err := net.ListenUDP("udp", client)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    master, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    go listenForMaster(incoming)
+
     for {
-        data := make([]byte, 1024)
-        read_bytes, sender_addr, err := conn.ReadFromUDP(data)
+        r := <- outgoing
+        _, err = conn.WriteToUDP([]byte(status.Data), master)
         if err != nil {
             log.Fatal(err)
         }
-        incoming <- ClientToMasterUpdate{sender_addr, string(data[:read_bytes])}
     }
+
+    conn.Close()
 }
 
-func sendUpdatesToClient(outgoing chan MasterToClientUpdate, conn *net.UDPConn) {
+func listenForClient(incoming chan ClientRequest) {
+
+}
+
+func MasterWorker(incoming chan ClientRequest, outgoing chan MasterResponse) {
+    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    conn, err := net.ListenUDP("udp", local)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    go listenForMaster(incoming)
+
     for {
-        update := <- outgoing
-        conn.WriteToUDP([]byte(update.ActiveOrders), update.Destination)
-    }
-}
-
-func InitClient(outgoing chan ClientToMasterUpdate, incoming chan MasterToClientUpdate) {
-    local, err := net.ResolveUDPAddr("udp", ":54321")
-    if err != nil {
-        log.Fatal(err)
+        r := <- outgoing
+        _, err = conn.WriteToUDP([]byte(status.Data), master)
+        if err != nil {
+            log.Fatal(err)
+        }
     }
 
-    conn, err := net.ListenUDP("udp", local)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    defer conn.Close()
-
-    go sendClientUpdatesToMaster(outgoing, conn)
-    listenForUpdatesFromMaster(incoming, conn)
-}
-
-func InitMaster(outgoing chan MasterToClientUpdate, incoming chan ClientToMasterUpdate) {
-    local, err := net.ResolveUDPAddr("udp", ":20012")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    conn, err := net.ListenUDP("udp", local)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    defer conn.Close()
-
-    go sendUpdateToClient(outgoing, conn)
-    listenForUpdatesFromClient(incoming, conn)
+    conn.Close()
 }
