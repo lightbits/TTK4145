@@ -49,11 +49,11 @@ type MasterUpdate struct {
     TargetFloor    int
 }
 
-func ListenForClientTimeout(client *Client, timeout chan Client) {
+func ListenForClientTimeout(client *Client, timeout chan *Client) {
     for {
         select {
         case <- client.Timer.C:
-            timeout <- *client
+            timeout <- client
         }
     }
 }
@@ -109,12 +109,12 @@ func main() {
     }
     defer conn.Close()
 
-    clients := make(map[string]Client)
+    clients := make(map[string]*Client)
     orders  := make([]Order, 0)
 
     // Event channels
     incoming_update  := make(chan ClientStatus)
-    client_timed_out := make(chan Client)
+    client_timed_out := make(chan *Client)
     time_to_send     := time.NewTicker(MASTER_UPDATE_INTERVAL)
     time_to_display  := time.NewTicker(1 * time.Second)
 
@@ -126,19 +126,17 @@ func main() {
 
             id := status.SenderAddress.String()
 
-            client, exists := clients[id]
-            if !exists {
-                var new_client Client
-                new_client.Address = status.SenderAddress
-                new_client.Timer = time.NewTimer(CLIENT_TIMEOUT_INTERVAL)
-                clients[id] = new_client
-                go ListenForClientTimeout(&new_client, client_timed_out)
+
+            if _, exists := clients[id]; !exists {
+                var c Client
+                c.Address = status.SenderAddress
+                c.Timer = time.NewTimer(CLIENT_TIMEOUT_INTERVAL)
+                clients[id] = &c
+                go ListenForClientTimeout(&c, client_timed_out)
             }
-            client = clients[id]
-            client.TimedOut = false
-            client.Timer.Reset(CLIENT_TIMEOUT_INTERVAL)
-            client.LastPassedFloor = status.LastPassedFloor
-            clients[id] = client // Because go is kinda lame
+            clients[id].TimedOut = false
+            clients[id].Timer.Reset(CLIENT_TIMEOUT_INTERVAL)
+            clients[id].LastPassedFloor = status.LastPassedFloor
 
             for _, button := range(status.Commands) {
                 exists := false
