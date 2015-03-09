@@ -1,7 +1,7 @@
 package driver
 // #include "io.h"
 // #cgo CFLAGS: -std=c99
-// #cgo LDFLAGS: -L. /home/simeh/Documents/ttk4145/project/libs/libsimulation_elevator.a /home/simeh/Documents/ttk4145/project/libs/libphoboss.a -lcomedi -lm
+// #cgo LDFLAGS: -L. -lcomedi -lm
 import "C"
 
 const N_FLOORS = 4

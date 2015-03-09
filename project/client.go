@@ -5,44 +5,63 @@ import (
     "time"
     "net"
     "log"
+    "encoding/json"
 )
 
 const CLIENT_UPDATE_INTERVAL = 1 * time.Second
 
 type Status struct {
-    Data string
+    LastPassedFloor int
+    ClearedFloors   []int
+    Commands        []OrderButton
 }
+
+type ButtonType int
+const (
+    ButtonUp ButtonType = iota
+    ButtonDown
+    ButtonOut
+)
 
 type OrderButton struct {
-    Floor int32
-    Type  int32
+    Floor int
+    Type  ButtonType
 }
 
-type MasterToClient struct {
-    Data string
+type MasterUpdate struct {
+    LitButtonLamps []OrderButton
+    TargetFloor    int
 }
 
-func broadcastStatusToMaster(conn *net.UDPConn, status Status) {
+func sendToMaster(conn *net.UDPConn, status Status) {
     remote, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
     if err != nil {
         log.Fatal(err)
     }
-    _, err = conn.WriteToUDP([]byte(status.Data), remote)
+    bytes, err := json.Marshal(status)
+    if err != nil {
+        log.Fatal(err)
+    }
+    _, err = conn.WriteToUDP(bytes, remote)
     if err != nil {
         log.Fatal(err)
     }
 }
 
-func getUpdatesFromMaster(conn *net.UDPConn, incoming chan MasterToClient) {
+func listenToMaster(conn *net.UDPConn, incoming chan MasterUpdate) {
     for {
-        data := make([]byte, 1024)
-        read_bytes, _, err := conn.ReadFromUDP(data)
+        bytes := make([]byte, 1024)
+        read_bytes, _, err := conn.ReadFromUDP(bytes)
         if err != nil {
             log.Fatal(err)
         }
-        r := MasterToClient{string(data[:read_bytes])}
 
-        incoming <- r
+        var update MasterUpdate
+        err = json.Unmarshal(bytes[:read_bytes], &update)
+        if err != nil{
+            log.Fatal(err)
+        }
+        incoming <- update
     }
 }
 
@@ -56,20 +75,40 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-
     defer conn.Close()
-    incoming := make(chan MasterToClient)
-    go getUpdatesFromMaster(conn, incoming)
-    ticker := time.NewTicker(CLIENT_UPDATE_INTERVAL)
+
+    incoming_update := make(chan MasterUpdate)
+    time_to_send    := time.NewTicker(CLIENT_UPDATE_INTERVAL)
+    reached_floor   := make(chan int)
+    cleared_floor   := make(chan int)
+    go listenToMaster(conn, incoming_update)
+
+    go func(reached_floor chan int, cleared_floor chan int) {
+        time.Sleep(5 * time.Second)
+        reached_floor <- 5
+        time.Sleep(3 * time.Second)
+        cleared_floor <- 5
+    }(reached_floor, cleared_floor)
+
+    var status Status
 
     for {
         select {
-        case <- ticker.C:
-            fmt.Println("Client send update")
-            broadcastStatusToMaster(conn, Status{"Hello"})
+        case f := <- reached_floor:
+            status.LastPassedFloor = f
 
-        case update := <- incoming:
-            fmt.Println("Master said:", update.Data)
+        case f := <- cleared_floor:
+            status.ClearedFloors = append(status.ClearedFloors, f)
+
+        case <- time_to_send.C:
+            fmt.Println("Client send update")
+            status.Commands = []OrderButton{
+                OrderButton{5, ButtonUp},
+            }
+            sendToMaster(conn, status)
+
+        case update := <- incoming_update:
+            fmt.Println("Master said:", update.LitButtonLamps, update.TargetFloor)
         }
     }
 }

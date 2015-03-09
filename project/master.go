@@ -5,29 +5,48 @@ import (
     "time"
     "log"
     "net"
+    "os"
+    "encoding/json"
 )
 
 const MASTER_UPDATE_INTERVAL  = 3 * time.Second
 const CLIENT_TIMEOUT_INTERVAL = 2 * time.Second
 
 type Client struct {
-    Address  *net.UDPAddr
-    Timer    *time.Timer
-    TimedOut bool
+    Address         *net.UDPAddr
+    Timer           *time.Timer
+    TimedOut        bool
+    LastPassedFloor int
+    TargetFloor     int
 }
+
+type ButtonType int
+const (
+    ButtonUp ButtonType = iota
+    ButtonDown
+    ButtonOut
+)
 
 type OrderButton struct {
-    Floor int32
-    Type  int32
+    Floor int
+    Type  ButtonType
 }
 
-type IncomingClientStatus struct {
-    SenderAddress *net.UDPAddr
-    Data string
+type Order struct {
+    Button  OrderButton
+    TakenBy string
 }
 
-type MasterToClient struct {
-    Data string
+type ClientStatus struct {
+    SenderAddress   *net.UDPAddr
+    LastPassedFloor int
+    ClearedFloors   []int
+    Commands        []OrderButton
+}
+
+type MasterUpdate struct {
+    LitButtonLamps []OrderButton
+    TargetFloor    int
 }
 
 func ListenForClientTimeout(client *Client, timeout chan Client) {
@@ -39,21 +58,40 @@ func ListenForClientTimeout(client *Client, timeout chan Client) {
     }
 }
 
-func listenForClientStatus(conn *net.UDPConn, incoming chan IncomingClientStatus) {
+func listenToClient(conn *net.UDPConn, incoming chan ClientStatus) {
     for {
-        data := make([]byte, 1024)
-        read_bytes, client_addr, err := conn.ReadFromUDP(data)
-        if err == nil {
-            incoming <- IncomingClientStatus{client_addr, string(data[:read_bytes])}
-        } else {
+        bytes := make([]byte, 1024)
+        read_bytes, client_addr, err := conn.ReadFromUDP(bytes)
+        if err != nil {
             log.Println(err)
-            return
+            continue
         }
+
+        type Status struct {
+            LastPassedFloor int
+            ClearedFloors   []int
+            Commands        []OrderButton
+        }
+
+        var status Status
+        err = json.Unmarshal(bytes[:read_bytes], &status)
+        if err != nil {
+            log.Fatal(err)
+        }
+        incoming <- ClientStatus{
+            client_addr,
+            status.LastPassedFloor,
+            status.ClearedFloors,
+            status.Commands}
     }
 }
 
-func sendToClient(conn *net.UDPConn, client_addr *net.UDPAddr, packet MasterToClient) {
-    _, err := conn.WriteToUDP([]byte(packet.Data), client_addr)
+func sendToClient(conn *net.UDPConn, client_addr *net.UDPAddr, packet MasterUpdate) {
+    bytes, err := json.Marshal(packet)
+    if err != nil {
+        log.Fatal(err)
+    }
+    _, err = conn.WriteToUDP(bytes, client_addr)
     if err != nil {
         log.Println(err)
     }
@@ -69,48 +107,97 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-
     defer conn.Close()
 
     clients := make(map[string]Client)
+    orders  := make([]Order, 0)
 
-    incoming := make(chan IncomingClientStatus)
-    go listenForClientStatus(conn, incoming)
+    // Event channels
+    incoming_update  := make(chan ClientStatus)
+    client_timed_out := make(chan Client)
+    time_to_send     := time.NewTicker(MASTER_UPDATE_INTERVAL)
+    time_to_display  := time.NewTicker(1 * time.Second)
 
-    client_timeout := make(chan Client)
-    ticker := time.NewTicker(MASTER_UPDATE_INTERVAL)
+    go listenToClient(conn, incoming_update)
 
     for {
         select {
-        case update := <- incoming:
+        case status := <- incoming_update:
 
-            map_key := update.SenderAddress.String()
+            id := status.SenderAddress.String()
 
-            if client, exists := clients[map_key]; exists {
-                client.Timer.Reset(CLIENT_TIMEOUT_INTERVAL)
-            } else {
-                fmt.Println("CLIENT", map_key, "connected")
-                new_client := Client{update.SenderAddress,
-                    time.NewTimer(CLIENT_TIMEOUT_INTERVAL),
-                    false}
-                clients[map_key] = new_client
-                go ListenForClientTimeout(&new_client, client_timeout)
+            client, exists := clients[id]
+            if !exists {
+                var new_client Client
+                new_client.Address = status.SenderAddress
+                new_client.Timer = time.NewTimer(CLIENT_TIMEOUT_INTERVAL)
+                clients[id] = new_client
+                go ListenForClientTimeout(&new_client, client_timed_out)
+            }
+            client = clients[id]
+            client.TimedOut = false
+            client.Timer.Reset(CLIENT_TIMEOUT_INTERVAL)
+            client.LastPassedFloor = status.LastPassedFloor
+            clients[id] = client // Because go is kinda lame
+
+            for _, button := range(status.Commands) {
+                exists := false
+                for _, o := range(orders) {
+                    exists = o.Button.Floor == button.Floor &&
+                             o.Button.Type  == button.Type
+                }
+                if !exists {
+                    orders = append(orders, Order{button, id})
+                }
             }
 
-            fmt.Println("CLIENT", map_key, "said", update.Data)
+            for _, floor := range(status.ClearedFloors) {
+                for i, o := range(orders) {
+                    if o.Button.Floor == floor {
+                        orders = append(orders[:i], orders[i+1:]...)
+                    }
+                }
+            }
 
-        case <- ticker.C:
+        case <- time_to_send.C:
 
             for _, client := range(clients) {
-                var data MasterToClient
-                data.Data = "Hey ho!"
+                var data MasterUpdate
+                data.LitButtonLamps = []OrderButton{
+                    OrderButton{5, ButtonUp},
+                    OrderButton{3, ButtonDown},
+                    OrderButton{3, ButtonOut},
+                }
+                data.TargetFloor = 3
                 sendToClient(conn, client.Address, data)
             }
-            fmt.Println("MASTER send update")
 
-        case client := <- client_timeout:
+        case client := <- client_timed_out:
             client.TimedOut = true
-            fmt.Println(client.Address, "timed out")
+
+        case <- time_to_display.C:
+
+            os.Stdout.Write([]byte("\033[2J"))
+            os.Stdout.Write([]byte("\033[H"))
+
+            fmt.Printf("Pending orders\n")
+            fmt.Printf("Number\tFloor\tType\n")
+            for n, o := range(orders) {
+                s := "out"
+                if o.Button.Type == ButtonUp {
+                    s = "up"
+                } else if o.Button.Type == ButtonDown {
+                    s = "down"
+                }
+                fmt.Printf("%d\t%d\t%s\n", n, o.Button.Floor, s)
+            }
+            fmt.Printf("\nConnections\nIP Address\tTimed out\tLast floor\tOrders\n")
+            for _, client := range(clients) {
+                who := client.Address.String()
+                timed_out := client.TimedOut
+                last_floor := client.LastPassedFloor
+                fmt.Printf("%s\t%v\t\t%d", who, timed_out, last_floor)
+            }
 
         }
     }
