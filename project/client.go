@@ -65,6 +65,15 @@ func listenToMaster(conn *net.UDPConn, incoming chan MasterUpdate) {
     }
 }
 
+func fakeEventGenerator(
+    reached_floor chan int,
+    cleared_floor chan int,) {
+    time.Sleep(5 * time.Second)
+        reached_floor <- 5
+        time.Sleep(3 * time.Second)
+        cleared_floor <- 5
+}
+
 func main() {
     local, err := net.ResolveUDPAddr("udp", "127.0.0.1:54321")
     if err != nil {
@@ -82,13 +91,7 @@ func main() {
     reached_floor   := make(chan int)
     cleared_floor   := make(chan int)
     go listenToMaster(conn, incoming_update)
-
-    go func(reached_floor chan int, cleared_floor chan int) {
-        time.Sleep(5 * time.Second)
-        reached_floor <- 5
-        time.Sleep(3 * time.Second)
-        cleared_floor <- 5
-    }(reached_floor, cleared_floor)
+    go fakeEventGenerator(reached_floor, cleared_floor)
 
     var status Status
 
