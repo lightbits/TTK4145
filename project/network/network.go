@@ -6,17 +6,17 @@ import (
     "log"
 )
 
+type ID *net.UDPAddr
+
 type OutgoingPacket struct {
-    Destination *net.UDPAddr
-    Data []byte
+    Destination ID
+    Data        []byte
 }
 
 type IncomingPacket struct {
-    Sender   *net.UDPAddr
+    Sender   ID
     Data     []byte
 }
-
-type ID *net.UDPAddr
 
 func listen(socket *net.UDPConn, incoming chan IncomingPacket) {
     for {
@@ -34,15 +34,21 @@ func Init(listen_port  int,
           outgoing     chan OutgoingPacket,
           outgoing_all chan OutgoingPacket,
           incoming     chan IncomingPacket) {
-    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("78.91.19.229:%d", listen_port))
+    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", listen_port))
     if err != nil {
         log.Fatal(err)
     }
 
+    // TODO: Test broadcasting at lab
     broadcast, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
     if err != nil {
         log.Fatal(err)
     }
+
+    // socket_all, err := net.DialUDP("udp", local, broadcast)
+    // if err != nil {
+    //     log.Fatal(err)
+    // }
 
     socket, err := net.ListenUDP("udp", local)
     if err != nil {
@@ -54,14 +60,15 @@ func Init(listen_port  int,
     for {
         select {
         case p := <- outgoing:
-            bytes_sent, err = socket.WriteToUDP(p.Data, p.Destination)
+            bytes_sent, err := socket.WriteToUDP(p.Data, p.Destination)
             if err != nil {
                 log.Fatal(err)
             }
             log.Println("Sent", bytes_sent, "bytes to", p.Destination)
 
         case p := <- outgoing_all:
-            bytes_sent, err = socket.WriteToUDP(p.Data, broadcast)
+            bytes_sent, err := socket.WriteToUDP(p.Data, broadcast)
+            // bytes_sent, err := socket_all.Write(p.Data)
             if err != nil {
                 log.Fatal(err)
             }

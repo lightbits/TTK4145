@@ -6,21 +6,10 @@ const (
     ButtonDown
     ButtonOut
 )
-type ButtonEvent struct {
+
+type OrderButton struct {
     Floor int
     Type  ButtonType
-}
-
-type ReachedFloorEvent struct {
-    FloorIndex int
-}
-
-type StopButtonEvent struct {
-    IsPressed bool
-}
-
-type ObstructionEvent struct {
-    IsObstructed bool
 }
 
 func MotorUp() {
@@ -44,8 +33,8 @@ func SetStopLamp(on bool) {
 func SetFloorIndicator(floor int) {
 }
 
-func Init(button_pressed chan ButtonEvent,
-          floor_reached  chan ReachedFloorEvent,
-          stop_pressed   chan StopButtonEvent,
-          obstruction    chan ObstructionEvent) {
+func Init(button_pressed chan OrderButton,
+          floor_reached  chan int,
+          stop_pressed   chan bool,
+          obstruction    chan bool) {
 }

@@ -11,7 +11,8 @@ const (
     ButtonDown
     ButtonOut
 )
-type ButtonEvent struct {
+
+type OrderButton struct {
     Floor int
     Type  ButtonType
 }
