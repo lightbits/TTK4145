@@ -1,0 +1,75 @@
+WaitForBackup:
+    select {
+        case p := <- incoming:
+            if p.Protocol == CL_PING:
+                go Master(p.Sender)
+                return
+            else:
+                continue
+    }
+
+
+Master(backup):
+    for select:
+        case c := <- client_timed_out:
+            if backup == c:
+                go WaitForBackup
+                return
+
+
+Lift:
+    for select {
+        case f := <- new_target_floor:
+
+        case f := <- floor_reached:
+        case btn := <- button_pressed:
+
+        case <- stop_pressed:
+            // ignore
+        case <- obstruction:
+            // ignore
+    }
+
+Client(master_address):
+    time_to_send := time.NewTicker(1 * time.Second)
+    timeout_timer := time.NewTimer(4 * time.Second)
+    var status Status
+    for select:
+        case <- time_to_send.C:
+            p := ClientStatusPacket{
+                Cl_UPDATE,
+                status
+            }
+            outgoing <- Encode(p)
+
+        cae u := <- incoming:
+            if u.Protocol == SV_UPDATE:
+                timeout_timer.Reset()
+
+        case <- timeout_timer
+            go WaitForMaster()
+            return
+
+
+Backup(master_address):
+
+WaitForMaster(queue):
+    time_to_broadcast = time.NewTicker(1 * time.Second)
+    for select:
+        case <- time_to_broadcast.C:
+            p := PingPacket{CL_PING}
+            outgoing_all <- Encode(p)
+
+        case u := <- incoming:
+            if u.Protocol == SV_UPDATE:
+                go Client(u.Sender)
+                return
+
+        case <- cleared_floor:
+            f := GetNextFloorInQueue()
+            new_target_floor <- f
+
+
+main:
+    go Lift()
+    WaitForMaster()

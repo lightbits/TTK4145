@@ -1,8 +1,8 @@
 package main
 
 import (
-    "log"
-    "./driver"
+    "./network"
+    "./fakedriver"
 )
 
 type OrderType int32
@@ -12,51 +12,81 @@ const (
     OrderOut  = 2
 )
 
-func main() {
-    button_pressed := make(chan driver.ButtonEvent)
-    floor_reached  := make(chan driver.ReachedFloorEvent)
-    stop_pressed   := make(chan driver.StopButtonEvent)
-    obstruction    := make(chan driver.ObstructionEvent)
+func WaitForBackup() {
 
-    go driver.Init(button_pressed, floor_reached, stop_pressed, obstruction)
+}
 
-    for {
-        select {
-        case btn := <- button_pressed:
-            if btn.Floor == 0 {
-                driver.MotorUp()
-                driver.SetButtonLamp(driver.ButtonOut, 0, true)
-                driver.SetButtonLamp(driver.ButtonOut, 1, true)
-                driver.SetButtonLamp(driver.ButtonOut, 2, true)
-                driver.SetButtonLamp(driver.ButtonOut, 3, true)
-                driver.SetButtonLamp(driver.ButtonUp, 0, true)
-                driver.SetButtonLamp(driver.ButtonUp, 1, true)
-                driver.SetButtonLamp(driver.ButtonUp, 2, true)
-                driver.SetButtonLamp(driver.ButtonDown, 1, true)
-                driver.SetButtonLamp(driver.ButtonDown, 2, true)
-                driver.SetButtonLamp(driver.ButtonDown, 3, true)
-                driver.SetDoorOpenLamp(true)
-                driver.SetStopLamp(true)
-            } else if btn.Floor == 1 {
-                driver.MotorDown()
-            } else if btn.Floor == 2 {
-                driver.MotorStop()
-            }
-        case floor := <- floor_reached:
-            driver.SetFloorIndicator(floor.FloorIndex)
-            log.Println(floor.FloorIndex)
-        case <- stop_pressed:
-            log.Println("Stop")
-        case <- obstruction:
-            log.Println("Obstruction")
+func Master(backup network.ID) {
+
+}
+
+type Channels struct {
+    button_pressed  chan driver.ButtonEvent
+    floor_reached   chan driver.ReachedFloorEvent
+    stop_button     chan driver.StopButtonEvent
+    obstruction     chan driver.ObstructionEvent
+    incoming        chan network.IncomingPacket
+    outgoing        chan network.OutgoingPacket
+    outgoing_all    chan network.OutgoingPacket
+}
+
+type Order struct {
+    Floor    int
+    Type     driver.ButtonType
+    TakenBy  network.ID
+    Done     bool
+    Priority bool
+}
+
+type Queue struct {
+    Orders []Order
+}
+
+func (q Queue) RemoveOrdersAtFloor(f int) {
+    for _, o := range(q.Orders) {
+        if o.Floor == f {
+
         }
     }
+}
 
-    // finished_order := make(chan lift.FinishedOrderEvent)
-    // client_update  := make(chan network.ClientUpdate)
-    // master_update  := make(chan network.MasterUpdate)
-    // master_timeout_timer := time.NewTimer()
-    // client_update_timer := time.NewTimer()
+func WaitForMaster(c Channels, q Queue) {
 
-    log.Println("Hello!")
+    // for {
+    //     select {
+    //     case b := <- c.button_pressed:
+    //     case f := <- c.floor_reached:
+    //     case s := <- c.stop_button:
+    //     case o := <- c.obstruction:
+    //     case i := <- c.incoming:
+    //     }
+    // }
+
+}
+
+func Client(c Channels) {
+    // var local_queue Queue
+}
+
+func main() {
+    var channels Channels
+    channels.button_pressed = make(chan driver.ButtonEvent)
+    channels.floor_reached  = make(chan driver.ReachedFloorEvent)
+    channels.stop_button    = make(chan driver.StopButtonEvent)
+    channels.obstruction    = make(chan driver.ObstructionEvent)
+    channels.incoming       = make(chan network.IncomingPacket)
+    channels.outgoing       = make(chan network.OutgoingPacket)
+    channels.outgoing_all   = make(chan network.OutgoingPacket)
+
+    go driver.Init(
+        channels.button_pressed,
+        channels.floor_reached,
+        channels.stop_button,
+        channels.obstruction)
+
+    go network.Init(
+        12345,
+        channels.outgoing,
+        channels.outgoing_all,
+        channels.incoming)
 }

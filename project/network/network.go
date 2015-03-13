@@ -2,86 +2,67 @@ package network
 
 import (
     "net"
+    "fmt"
     "log"
 )
 
-type ClientRequest struct {
-    Data string
+type OutgoingPacket struct {
+    Destination *net.UDPAddr
+    Data []byte
 }
 
-type MasterResponse struct {
-    Sender
-    Data string
+type IncomingPacket struct {
+    Sender   *net.UDPAddr
+    Data     []byte
 }
 
-type Client struct {
-    ID string
-}
+type ID *net.UDPAddr
 
-func listenForMaster(socket *net.UDPConn, incoming chan MasterResponse) {
+func listen(socket *net.UDPConn, incoming chan IncomingPacket) {
     for {
-        data := make([]byte, 1024)
-        read_bytes, _, err := conn.ReadFromUDP(data)
+        bytes := make([]byte, 1024)
+        read_bytes, sender, err := socket.ReadFromUDP(bytes)
         if err != nil {
             log.Fatal(err)
         }
-        incoming <- MasterResponse{string(data[:read_bytes])}
+        incoming <- IncomingPacket{sender, bytes[:read_bytes]}
     }
 }
 
-func ClientWorker(incoming chan MasterResponse, outgoing chan ClientRequest) {
-    client, err := net.ResolveUDPAddr("udp", "127.0.0.1:54321")
+func Init(listen_port  int,
+          outgoing     chan OutgoingPacket,
+          outgoing_all chan OutgoingPacket,
+          incoming     chan IncomingPacket) {
+    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", listen_port))
     if err != nil {
         log.Fatal(err)
     }
 
-    socket, err := net.ListenUDP("udp", client)
+    broadcast, err := net.ResolveUDPAddr("udp", "127.0.0.255:20012")
     if err != nil {
         log.Fatal(err)
     }
 
-    master, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
+    socket, err := net.ListenUDP("udp", local)
     if err != nil {
         log.Fatal(err)
     }
+    defer socket.Close()
 
-    go listenForMaster(incoming)
+    go listen(socket, incoming)
 
     for {
-        r := <- outgoing
-        _, err = conn.WriteToUDP([]byte(status.Data), master)
-        if err != nil {
-            log.Fatal(err)
+        select {
+        case p := <- outgoing:
+            _, err = socket.WriteToUDP(p.Data, p.Destination)
+            if err != nil {
+                log.Fatal(err)
+            }
+        case p := <- outgoing_all:
+            _, err = socket.WriteToUDP(p.Data, broadcast)
+            if err != nil {
+                log.Fatal(err)
+            }
         }
     }
-
-    conn.Close()
-}
-
-func listenForClient(incoming chan ClientRequest) {
-
-}
-
-func MasterWorker(incoming chan ClientRequest, outgoing chan MasterResponse) {
-    local, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    conn, err := net.ListenUDP("udp", local)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    go listenForMaster(incoming)
-
-    for {
-        r := <- outgoing
-        _, err = conn.WriteToUDP([]byte(status.Data), master)
-        if err != nil {
-            log.Fatal(err)
-        }
-    }
-
-    conn.Close()
 }
