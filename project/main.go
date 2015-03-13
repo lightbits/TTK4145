@@ -2,8 +2,8 @@ package main
 
 import (
     "time"
-    "net"
     "log"
+    "fmt"
     "flag"
     "encoding/json"
     "./network"
@@ -28,6 +28,12 @@ type MasterData struct {
     Orders Queue
 }
 
+type ClientType struct {
+    ID              network.ID
+    LastPassedFloor int
+    TargetFloor     int
+}
+
 type Channels struct {
     button_pressed  chan driver.OrderButton
     floor_reached   chan int
@@ -36,15 +42,6 @@ type Channels struct {
     incoming        chan network.IncomingPacket
     outgoing        chan network.OutgoingPacket
     outgoing_all    chan network.OutgoingPacket
-}
-
-func (q Queue) RemoveOrdersAtFloor(f int) {
-    // TODO: Implement
-    // for _, o := range(q.Orders) {
-    //     if o.Floor == f {
-
-    //     }
-    // }
 }
 
 func DecodeMasterPacket(b []byte) MasterData {
@@ -82,44 +79,42 @@ func EncodeClientData(c ClientData) []byte {
 }
 
 func WaitForBackup(c Channels) {
-    log.Println("Waiting for backup")
+    fmt.Println("Waiting for backup...")
     for {
         select {
         case packet := <- c.incoming:
-            sender := packet.Sender
-            Master(c, sender)
+            Master(c, packet.Sender)
             return
         }
     }
 }
 
-type ClientType struct {
-    ID              network.ID
-    Timer          *time.Timer
-    LastPassedFloor int
-    TargetFloor     int
-}
-
-func ListenForClientTimeout(client *ClientType, timeout chan *ClientType) {
+func Master(c Channels, backup network.ID) {
+    fmt.Println("Starting master with backup", backup)
+    time_to_send := time.NewTicker(1*time.Second)
     for {
         select {
-        case <- client.Timer.C:
-            timeout <- client
+        case <- time_to_send.C:
+            c.outgoing_all <- network.OutgoingPacket {
+                Data: []byte("This is an update from your master!"),
+            }
         }
     }
-}
-
-func Master(c Channels, backup network.ID) {
-    log.Println("Starting master with backup", backup)
 }
 
 func Backup(c Channels) {
 
 }
 
+func SendPing(c chan network.OutgoingPacket) {
+    c <- network.OutgoingPacket {
+        Data: []byte("Ping"),
+    }
+}
+
 func WaitForMaster(c Channels, q Queue) {
-    log.Println("Waiting for master")
-    time_to_ping := time.NewTicker(5*time.Second)
+    log.Println("Waiting for master...")
+    time_to_ping := time.NewTicker(1*time.Second)
 
     for {
         select {
@@ -127,12 +122,16 @@ func WaitForMaster(c Channels, q Queue) {
         case <- c.floor_reached:
         case <- c.stop_button:
         case <- c.obstruction:
-        case <- c.incoming:
+
+        // TODO: Should we have some protocol stuff?
+        // Verify that we did infact get a packet from the master?
+        // Might just want to include in ClientData and MasterData
+        case packet := <- c.incoming:
+            Client(c, packet.Sender)
+            return
 
         case <- time_to_ping.C:
-            var p network.OutgoingPacket
-            p.Data = []byte("Ping")
-            c.outgoing_all <- p
+            SendPing(c.outgoing_all)
         }
     }
 
@@ -160,20 +159,13 @@ func TestNetwork(channels Channels) {
     for {
         select {
         case <- ticker.C:
-            var p network.OutgoingPacket
-            remote, err := net.ResolveUDPAddr("udp", "127.0.0.1:20012")
-            // remote, err := net.ResolveUDPAddr("udp", "78.91.16.212:20012")
-            if err != nil {
-                log.Fatal(err)
-            }
-            p.Destination = remote
-            p.Data = []byte("Hello you!")
-            channels.outgoing <- p
+            channels.outgoing <- network.OutgoingPacket{
+                Destination: "127.0.0.1:20012",
+                Data: []byte("Hi!")}
 
         case <- ticker_all.C:
-            var p network.OutgoingPacket
-            p.Data = []byte("Hello all!")
-            channels.outgoing_all <- p
+            channels.outgoing_all <- network.OutgoingPacket{
+                Data: []byte("hello!")}
 
         case p := <- channels.incoming:
             log.Println("Got", len(p.Data), "bytes from", p.Sender)
@@ -181,19 +173,12 @@ func TestNetwork(channels Channels) {
     }
 }
 
-func TestDriver(channels Channels) {
-    for {
-        channels.button_pressed <- driver.OrderButton{3, driver.ButtonDown}
-        channels.button_pressed <- driver.OrderButton{4, driver.ButtonUp}
-        channels.floor_reached <- 2
-        time.Sleep(1 * time.Second)
-    }
-}
-
 func main() {
     var listen_port int
+    var bcast_port int
     var start_as_master bool
     flag.IntVar(&listen_port, "port", 12345, "Preferred listen port")
+    flag.IntVar(&bcast_port, "bport", 20012, "Broadcast port")
     flag.BoolVar(&start_as_master, "master", false, "Start as master")
     flag.Parse()
 
@@ -214,17 +199,14 @@ func main() {
 
     go network.Init(
         listen_port,
+        bcast_port,
         channels.outgoing,
         channels.outgoing_all,
         channels.incoming)
-
-    // go TestDriver(channels)
 
     if start_as_master {
         WaitForBackup(channels)
     } else {
         WaitForMaster(channels, nil)
     }
-
-    // TestNetwork(channels)
 }

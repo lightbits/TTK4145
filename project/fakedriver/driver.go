@@ -1,5 +1,9 @@
 package driver
 
+import (
+    "time"
+)
+
 type ButtonType int
 const (
     ButtonUp ButtonType = iota
@@ -37,4 +41,11 @@ func Init(button_pressed chan OrderButton,
           floor_reached  chan int,
           stop_pressed   chan bool,
           obstruction    chan bool) {
+
+    for {
+        button_pressed <- OrderButton{3, ButtonDown}
+        button_pressed <- OrderButton{4, ButtonUp}
+        floor_reached <- 2
+        time.Sleep(1 * time.Second)
+    }
 }

@@ -6,7 +6,7 @@ import (
     "log"
 )
 
-type ID *net.UDPAddr
+type ID string
 
 type OutgoingPacket struct {
     Destination ID
@@ -25,12 +25,13 @@ func listen(socket *net.UDPConn, incoming chan IncomingPacket) {
         if err != nil {
             log.Println(err)
         } else {
-            incoming <- IncomingPacket{sender, bytes[:read_bytes]}
+            incoming <- IncomingPacket{ID(sender.String()), bytes[:read_bytes]}
         }
     }
 }
 
 func Init(listen_port  int,
+          bcast_port   int,
           outgoing     chan OutgoingPacket,
           outgoing_all chan OutgoingPacket,
           incoming     chan IncomingPacket) {
@@ -40,7 +41,7 @@ func Init(listen_port  int,
     }
 
     // TODO: Test broadcasting at lab
-    broadcast, err := net.ResolveUDPAddr("udp", "255.255.255.255:20012")
+    broadcast, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", bcast_port))
     if err != nil {
         log.Fatal(err)
     }
@@ -60,7 +61,11 @@ func Init(listen_port  int,
     for {
         select {
         case p := <- outgoing:
-            bytes_sent, err := socket.WriteToUDP(p.Data, p.Destination)
+            remote, err := net.ResolveUDPAddr("udp", string(p.Destination))
+            if err != nil {
+                log.Fatal(err)
+            }
+            bytes_sent, err := socket.WriteToUDP(p.Data, remote)
             if err != nil {
                 log.Fatal(err)
             }
