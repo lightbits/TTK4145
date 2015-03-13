@@ -8,6 +8,7 @@ import (
     "encoding/json"
     "./network"
     "./fakedriver"
+    "./lift"
 )
 
 type Order struct {
@@ -20,6 +21,7 @@ type Order struct {
 type Queue []Order
 
 type ClientData struct {
+    // Protocol int
     LastPassedFloor int
     Requests Queue
 }
@@ -35,6 +37,8 @@ type ClientType struct {
 }
 
 type Channels struct {
+    completed_floor chan bool
+    reached_target  chan bool
     button_pressed  chan driver.OrderButton
     floor_reached   chan int
     stop_button     chan bool
@@ -143,12 +147,17 @@ func Client(c Channels, master network.ID) {
 
     // for {
     //     select {
-    //     case b := <- c.button_pressed:
-    //     case f := <- c.floor_reached:
-    //     case s := <- c.stop_button:
-    //     case o := <- c.obstruction:
-    //     case p, q := <- c.incoming:
-    //         local_queue = i.Queue
+    //     case <- c.completed_floor:
+
+    //     // case button := <- c.button_pressed:
+    //     case floor := <- c.floor_reached:
+    //         if floor == target_floor {
+    //             c.reached_target <- true
+    //         }
+    //     // case stopped := <- c.stop_button:
+    //     // case obstructed := <- c.obstruction:
+    //     // case packet := <- c.incoming:
+
     //     }
     // }
 }
@@ -183,13 +192,15 @@ func main() {
     flag.Parse()
 
     var channels Channels
-    channels.button_pressed = make(chan driver.OrderButton)
-    channels.floor_reached  = make(chan int)
-    channels.stop_button    = make(chan bool)
-    channels.obstruction    = make(chan bool)
-    channels.incoming       = make(chan network.IncomingPacket)
-    channels.outgoing       = make(chan network.OutgoingPacket)
-    channels.outgoing_all   = make(chan network.OutgoingPacket)
+    channels.completed_floor = make(chan bool)
+    channels.reached_target  = make(chan bool)
+    channels.button_pressed  = make(chan driver.OrderButton)
+    channels.floor_reached   = make(chan int)
+    channels.stop_button     = make(chan bool)
+    channels.obstruction     = make(chan bool)
+    channels.incoming        = make(chan network.IncomingPacket)
+    channels.outgoing        = make(chan network.OutgoingPacket)
+    channels.outgoing_all    = make(chan network.OutgoingPacket)
 
     go driver.Init(
         channels.button_pressed,
@@ -203,6 +214,12 @@ func main() {
         channels.outgoing,
         channels.outgoing_all,
         channels.incoming)
+
+    go lift.Init(
+        channels.completed_floor,
+        channels.reached_target,
+        channels.stop_button,
+        channels.obstruction)
 
     if start_as_master {
         WaitForBackup(channels)
