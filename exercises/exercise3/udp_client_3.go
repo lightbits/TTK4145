@@ -65,7 +65,7 @@ func main() {
     done := make(chan bool)
     go Write(done)
     go Listen(done)
-    
+
     <-done
     <-done
 }

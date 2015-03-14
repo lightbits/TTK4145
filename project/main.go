@@ -237,6 +237,16 @@ func main() {
         go WaitForMaster(channels, nil)
         WaitForBackup(channels)
     } else {
+
+        // This is terrible. And it does not fix the problem that is
+        // yet to come. Namely, when the backup should take over as master.
+        // Then it needs to stop absorbing these.
+        go func(from_client chan network.IncomingPacket) {
+            for {
+                <- from_client:
+                fmt.Println("Heard an echo")
+            }
+        }(channels.from_client)
         WaitForMaster(channels, nil)
     }
 }

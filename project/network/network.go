@@ -77,33 +77,35 @@ func GetMachineID(listen_port int) ID {
     return ID(fmt.Sprintf("127.0.0.1:%d", listen_port))
 }
 
-func Init(listen_port  int,
+func Init(listen_port    int,
           to_master      chan OutgoingPacket,
           to_all_clients chan OutgoingPacket,
           to_any_master  chan OutgoingPacket,
           from_master    chan IncomingPacket,
           from_client    chan IncomingPacket) {
-    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", listen_port))
+    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", listen_port))
     if err != nil {
         log.Fatal(err)
     }
 
-    // TODO: Test broadcasting at lab
     broadcast, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", listen_port))
     if err != nil {
         log.Fatal(err)
     }
-
-    // socket_all, err := net.DialUDP("udp", local, broadcast)
-    // if err != nil {
-    //     log.Fatal(err)
-    // }
 
     socket, err := net.ListenUDP("udp", local)
     if err != nil {
         log.Fatal(err)
     }
     defer socket.Close()
+
+    // Can we use dial somehow, to prevent broadcasted stuff from reaching ourselves again?
+    // socket_all, err := net.DialUDP("udp", nil, broadcast)
+    // if err != nil {
+    //     log.Fatal(err)
+    // }
+    // defer socket_all.Close()
+
 
     go listen(socket, from_master, from_client)
     for {
