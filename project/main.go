@@ -6,9 +6,9 @@ import (
     "fmt"
     "flag"
     "encoding/json"
+    "./lift"
     "./network"
     "./fakedriver"
-    "./lift"
 )
 
 type Order struct {
@@ -18,16 +18,13 @@ type Order struct {
     Priority bool
 }
 
-type Queue []Order
-
 type ClientData struct {
-    // Protocol int
     LastPassedFloor int
-    Requests Queue
+    Requests        []Order
 }
 
 type MasterData struct {
-    Orders Queue
+    Orders   []Order
 }
 
 type ClientType struct {
@@ -89,16 +86,37 @@ func WaitForBackup(c Channels) {
         case packet := <- c.incoming:
             Master(c, packet.Sender)
             return
+
+        /*
+        case packet := <- c.message_from_client:
+            if packet.Sender != machine_id {
+                Master(c, packet.Sender)
+            }
+        */
         }
     }
 }
 
+// func SendOrdersToClients(
+//     outgoing_all chan network.OutgoingPacket,
+//     orders       []Order) {
+
+//     md := MasterData {
+//         Protocol: MASTER_UPDATE,
+//         Orders:   orders}
+
+//     outgoing_all <- network.OutgoingPacket {
+//         Data: EncodeMasterData(md)}
+// }
+
 func Master(c Channels, backup network.ID) {
     fmt.Println("Starting master with backup", backup)
     time_to_send := time.NewTicker(1*time.Second)
+    // orders := make([]Order, 0)
     for {
         select {
         case <- time_to_send.C:
+            // SendOrdersToClients(c.outgoing_all, orders)
             c.outgoing_all <- network.OutgoingPacket {
                 Data: []byte("This is an update from your master!"),
             }
@@ -116,7 +134,7 @@ func SendPing(c chan network.OutgoingPacket) {
     }
 }
 
-func WaitForMaster(c Channels, q Queue) {
+func WaitForMaster(c Channels, remaining_orders []Order) {
     log.Println("Waiting for master...")
     time_to_ping := time.NewTicker(1*time.Second)
 
@@ -124,19 +142,25 @@ func WaitForMaster(c Channels, q Queue) {
         select {
         case <- c.button_pressed:
         case <- c.floor_reached:
-        case <- c.stop_button:
-        case <- c.obstruction:
 
+        /* TODO: Message protocols?
+        To verify that the incoming packet is infact from the master
+        */
         // TODO: Should we have some protocol stuff?
         // Verify that we did infact get a packet from the master?
         // Might just want to include in ClientData and MasterData
+        // Otherwise, can we guranatee
         case packet := <- c.incoming:
             Client(c, packet.Sender)
             return
 
         case <- time_to_ping.C:
             SendPing(c.outgoing_all)
+
+        case <- c.stop_button: // ignore
+        case <- c.obstruction: // ignore
         }
+
     }
 
 }
@@ -184,10 +208,8 @@ func TestNetwork(channels Channels) {
 
 func main() {
     var listen_port int
-    var bcast_port int
     var start_as_master bool
-    flag.IntVar(&listen_port, "port", 12345, "Preferred listen port")
-    flag.IntVar(&bcast_port, "bport", 20012, "Broadcast port")
+    flag.IntVar(&listen_port, "port", 20012, "Port that all clients send and listen to")
     flag.BoolVar(&start_as_master, "master", false, "Start as master")
     flag.Parse()
 
@@ -210,16 +232,13 @@ func main() {
 
     go network.Init(
         listen_port,
-        bcast_port,
         channels.outgoing,
         channels.outgoing_all,
         channels.incoming)
 
     go lift.Init(
         channels.completed_floor,
-        channels.reached_target,
-        channels.stop_button,
-        channels.obstruction)
+        channels.reached_target)
 
     if start_as_master {
         WaitForBackup(channels)

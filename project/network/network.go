@@ -31,7 +31,6 @@ func listen(socket *net.UDPConn, incoming chan IncomingPacket) {
 }
 
 func Init(listen_port  int,
-          bcast_port   int,
           outgoing     chan OutgoingPacket,
           outgoing_all chan OutgoingPacket,
           incoming     chan IncomingPacket) {
@@ -41,7 +40,7 @@ func Init(listen_port  int,
     }
 
     // TODO: Test broadcasting at lab
-    broadcast, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", bcast_port))
+    broadcast, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", listen_port))
     if err != nil {
         log.Fatal(err)
     }
