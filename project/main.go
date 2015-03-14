@@ -6,7 +6,6 @@ import (
     "fmt"
     "flag"
     "encoding/json"
-    "encoding/json"
     "./lift"
     "./network"
     "./fakedriver"
@@ -41,9 +40,11 @@ type Channels struct {
     floor_reached   chan int
     stop_button     chan bool
     obstruction     chan bool
-    incoming        chan network.IncomingPacket
-    outgoing        chan network.OutgoingPacket
-    outgoing_all    chan network.OutgoingPacket
+    to_master       chan network.OutgoingPacket
+    to_all_clients  chan network.OutgoingPacket
+    to_any_master   chan network.OutgoingPacket
+    from_master     chan network.IncomingPacket
+    from_client     chan network.IncomingPacket
 }
 
 func DecodeMasterPacket(b []byte) MasterData {
@@ -81,33 +82,27 @@ func EncodeClientData(c ClientData) []byte {
 }
 
 func WaitForBackup(c Channels) {
-    fmt.Println("Waiting for backup...")
+    fmt.Println("[MASTER]\tWaiting for backup...")
     for {
         select {
-        case packet := <- c.incoming:
+        case packet := <- c.from_client:
+            // if packet.Sender != machine_id {
             Master(c, packet.Sender)
             return
-
-        /*
-        case packet := <- c.message_from_client:
-            if packet.Sender != machine_id {
-                Master(c, packet.Sender)
-            }
-        */
         }
     }
 }
 
 
 func Master(c Channels, backup network.ID) {
-    fmt.Println("Starting master with backup", backup)
-    time_to_send := time.NewTicker(1*time.Second)
-    // orders := make([]Order, 0)
+    fmt.Println("[MASTER]\tStarting master with backup", backup)
+    time_to_send := time.NewTicker(2*time.Second)
     for {
         select {
+        case packet := <- c.from_client:
+            fmt.Println("[MASTER]\tClient said", string(packet.Data))
         case <- time_to_send.C:
-            // SendOrdersToClients(c.outgoing_all, orders)
-            c.outgoing_all <- network.OutgoingPacket {
+            c.to_all_clients <- network.OutgoingPacket {
                 Data: []byte("This is an update from your master!"),
             }
         }
@@ -118,34 +113,23 @@ func Backup(c Channels) {
 
 }
 
-func SendPing(c chan network.OutgoingPacket) {
-    c <- network.OutgoingPacket {
-        Data: []byte("Ping"),
-    }
-}
-
 func WaitForMaster(c Channels, remaining_orders []Order) {
-    fmt.Println("Waiting for master...")
+    fmt.Println("[CLIENT]\tWaiting for master...")
     time_to_ping := time.NewTicker(1*time.Second)
 
     for {
         select {
         case <- c.button_pressed:
         case <- c.floor_reached:
-
-        /* TODO: Message protocols?
-        To verify that the incoming packet is infact from the master
-        */
-        // TODO: Should we have some protocol stuff?
-        // Verify that we did infact get a packet from the master?
-        // Might just want to include in ClientData and MasterData
-        // Otherwise, can we guranatee
-        case packet := <- c.incoming:
+        case packet := <- c.from_master:
+            fmt.Println("[CLIENT]\tHeard a master!")
             Client(c, packet.Sender)
             return
 
         case <- time_to_ping.C:
-            SendPing(c.outgoing_all)
+            c.to_any_master <- network.OutgoingPacket {
+                Data: []byte("Ping"),
+            }
 
         case <- c.stop_button: // ignore
         case <- c.obstruction: // ignore
@@ -156,42 +140,55 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 }
 
 func Client(c Channels, master network.ID) {
-    fmt.Println("Starting client")
+    fmt.Println("[CLIENT]\tStarting client")
     // var local_queue Queue
 
-    // for {
-    //     select {
-    //     case <- c.completed_floor:
+    for {
+        select {
+        case packet := <- c.from_master:
+            fmt.Println("[CLIENT]\tMaster said", string(packet.Data))
 
-    //     // case button := <- c.button_pressed:
-    //     case floor := <- c.floor_reached:
-    //         if floor == target_floor {
-    //             c.reached_target <- true
-    //         }
-    //     // case stopped := <- c.stop_button:
-    //     // case obstructed := <- c.obstruction:
-    //     // case packet := <- c.incoming:
+        // case <- c.completed_floor:
 
-    //     }
-    // }
+        // case button := <- c.button_pressed:
+        // case floor := <- c.floor_reached:
+        //     if floor == target_floor {
+        //         c.reached_target <- true
+        //     }
+        // case stopped := <- c.stop_button:
+        // case obstructed := <- c.obstruction:
+
+        }
+    }
 }
 
 func TestNetwork(channels Channels) {
-    ticker := time.NewTicker(5*time.Second)
-    ticker_all := time.NewTicker(2*time.Second)
+    t1 := time.NewTimer(1*time.Second)
+    t2 := time.NewTimer(2*time.Second)
+    t3 := time.NewTimer(3*time.Second)
     for {
         select {
-        case <- ticker.C:
-            channels.outgoing <- network.OutgoingPacket{
+        case <- t1.C:
+            fmt.Println("Sending to all clients")
+            channels.to_all_clients <- network.OutgoingPacket{
+                Data: []byte("A")}
+
+        case <- t2.C:
+            fmt.Println("Sending to any master")
+            channels.to_any_master <- network.OutgoingPacket{
+                Data: []byte("BB")}
+
+        case <- t3.C:
+            fmt.Println("Sending to master")
+            channels.to_master <- network.OutgoingPacket{
                 Destination: "127.0.0.1:20012",
-                Data: []byte("Hi!")}
+                Data: []byte("CCC")}
 
-        case <- ticker_all.C:
-            channels.outgoing_all <- network.OutgoingPacket{
-                Data: []byte("hello!")}
+        case p := <- channels.from_client:
+            log.Println("Client sent:", len(p.Data), "bytes from", p.Sender)
 
-        case p := <- channels.incoming:
-            log.Println("Got", len(p.Data), "bytes from", p.Sender)
+        case p := <- channels.from_master:
+            log.Println("Master sent:", len(p.Data), "bytes from", p.Sender)
         }
     }
 }
@@ -210,17 +207,11 @@ func main() {
     channels.floor_reached   = make(chan int)
     channels.stop_button     = make(chan bool)
     channels.obstruction     = make(chan bool)
-    channels.incoming        = make(chan network.IncomingPacket)
-    channels.outgoing        = make(chan network.OutgoingPacket)
-    channels.outgoing_all    = make(chan network.OutgoingPacket)
-
-    b := []byte{0x00, 0x00, 0x00, 0x01}
-    i := int(b)
-    fmt.Println(i)
-
-    b = bytes.NewBuffer(packet.UserData[:packet.Length])
-    r = request{}
-    binary.Read(b, binary.BigEndian, &r)
+    channels.to_master       = make(chan network.OutgoingPacket)
+    channels.to_all_clients  = make(chan network.OutgoingPacket)
+    channels.to_any_master   = make(chan network.OutgoingPacket)
+    channels.from_master     = make(chan network.IncomingPacket)
+    channels.from_client     = make(chan network.IncomingPacket)
 
     go driver.Init(
         channels.button_pressed,
@@ -230,16 +221,20 @@ func main() {
 
     go network.Init(
         listen_port,
-        channels.outgoing,
-        channels.outgoing_all,
-        channels.incoming)
+        channels.to_master,
+        channels.to_all_clients,
+        channels.to_any_master,
+        channels.from_master,
+        channels.from_client)
 
     go lift.Init(
         channels.completed_floor,
         channels.reached_target)
 
+    // TestNetwork(channels)
     if start_as_master {
-        go WaitForMaster(channels, nil) // Also launch client instance
+        // The master also runs the client routine concurrently
+        go WaitForMaster(channels, nil)
         WaitForBackup(channels)
     } else {
         WaitForMaster(channels, nil)
