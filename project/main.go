@@ -6,6 +6,7 @@ import (
     "fmt"
     "flag"
     "encoding/json"
+    "encoding/json"
     "./lift"
     "./network"
     "./fakedriver"
@@ -97,17 +98,6 @@ func WaitForBackup(c Channels) {
     }
 }
 
-// func SendOrdersToClients(
-//     outgoing_all chan network.OutgoingPacket,
-//     orders       []Order) {
-
-//     md := MasterData {
-//         Protocol: MASTER_UPDATE,
-//         Orders:   orders}
-
-//     outgoing_all <- network.OutgoingPacket {
-//         Data: EncodeMasterData(md)}
-// }
 
 func Master(c Channels, backup network.ID) {
     fmt.Println("Starting master with backup", backup)
@@ -135,7 +125,7 @@ func SendPing(c chan network.OutgoingPacket) {
 }
 
 func WaitForMaster(c Channels, remaining_orders []Order) {
-    log.Println("Waiting for master...")
+    fmt.Println("Waiting for master...")
     time_to_ping := time.NewTicker(1*time.Second)
 
     for {
@@ -166,7 +156,7 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 }
 
 func Client(c Channels, master network.ID) {
-    log.Println("Starting client")
+    fmt.Println("Starting client")
     // var local_queue Queue
 
     // for {
@@ -224,6 +214,14 @@ func main() {
     channels.outgoing        = make(chan network.OutgoingPacket)
     channels.outgoing_all    = make(chan network.OutgoingPacket)
 
+    b := []byte{0x00, 0x00, 0x00, 0x01}
+    i := int(b)
+    fmt.Println(i)
+
+    b = bytes.NewBuffer(packet.UserData[:packet.Length])
+    r = request{}
+    binary.Read(b, binary.BigEndian, &r)
+
     go driver.Init(
         channels.button_pressed,
         channels.floor_reached,
@@ -241,6 +239,7 @@ func main() {
         channels.reached_target)
 
     if start_as_master {
+        go WaitForMaster(channels, nil) // Also launch client instance
         WaitForBackup(channels)
     } else {
         WaitForMaster(channels, nil)
