@@ -40,11 +40,10 @@ type Channels struct {
     floor_reached   chan int
     stop_button     chan bool
     obstruction     chan bool
-    to_master       chan network.OutgoingPacket
-    to_all_clients  chan network.OutgoingPacket
-    to_any_master   chan network.OutgoingPacket
-    from_master     chan network.IncomingPacket
-    from_client     chan network.IncomingPacket
+    to_master       chan network.Packet
+    to_clients      chan network.Packet
+    from_master     chan network.Packet
+    from_client     chan network.Packet
 }
 
 func DecodeMasterPacket(b []byte) MasterData {
@@ -81,18 +80,19 @@ func EncodeClientData(c ClientData) []byte {
     return result
 }
 
-func WaitForBackup(c Channels) {
+func WaitForBackup(c Channels, initial_queue []Order) {
+    go network.MasterWorker(c.from_client, c.to_clients)
+
     fmt.Println("[MASTER]\tWaiting for backup...")
     for {
         select {
         case packet := <- c.from_client:
             // if packet.Sender != machine_id {
-            Master(c, packet.Sender)
+            Master(c, packet.Address)
             return
         }
     }
 }
-
 
 func Master(c Channels, backup network.ID) {
     fmt.Println("[MASTER]\tStarting master with backup", backup)
@@ -102,15 +102,11 @@ func Master(c Channels, backup network.ID) {
         case packet := <- c.from_client:
             fmt.Println("[MASTER]\tClient said", string(packet.Data))
         case <- time_to_send.C:
-            c.to_all_clients <- network.OutgoingPacket {
+            c.to_clients <- network.Packet {
                 Data: []byte("This is an update from your master!"),
             }
         }
     }
-}
-
-func Backup(c Channels) {
-
 }
 
 func WaitForMaster(c Channels, remaining_orders []Order) {
@@ -119,18 +115,17 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 
     for {
         select {
-        case <- c.button_pressed:
-        case <- c.floor_reached:
         case packet := <- c.from_master:
             fmt.Println("[CLIENT]\tHeard a master!")
-            Client(c, packet.Sender)
+            Client(c, packet.Address)
             return
 
         case <- time_to_ping.C:
-            c.to_any_master <- network.OutgoingPacket {
+            c.to_master <- network.Packet {
                 Data: []byte("Ping"),
             }
-
+        case <- c.button_pressed:
+        case <- c.floor_reached:
         case <- c.stop_button: // ignore
         case <- c.obstruction: // ignore
         }
@@ -141,62 +136,54 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 
 func Client(c Channels, master network.ID) {
     fmt.Println("[CLIENT]\tStarting client")
-    // var local_queue Queue
-
+    is_backup := false
+    master_timeout := time.NewTimer(5*time.Second)
+    local_queue := make([]Order, 0)
     for {
         select {
         case packet := <- c.from_master:
             fmt.Println("[CLIENT]\tMaster said", string(packet.Data))
-
+        case <- master_timeout.C:
+            if is_backup {
+                WaitForBackup(c, local_queue)
+            }
         // case <- c.completed_floor:
-
         // case button := <- c.button_pressed:
         // case floor := <- c.floor_reached:
-        //     if floor == target_floor {
-        //         c.reached_target <- true
-        //     }
         // case stopped := <- c.stop_button:
         // case obstructed := <- c.obstruction:
-
         }
     }
 }
 
 func TestNetwork(channels Channels) {
+    go network.ClientWorker(channels.from_master, channels.to_master)
+    go network.MasterWorker(channels.from_client, channels.to_clients)
     t1 := time.NewTimer(1*time.Second)
     t2 := time.NewTimer(2*time.Second)
-    t3 := time.NewTimer(3*time.Second)
     for {
         select {
         case <- t1.C:
-            fmt.Println("Sending to all clients")
-            channels.to_all_clients <- network.OutgoingPacket{
+            fmt.Println("[NETTEST]\tSending to all clients")
+            channels.to_clients <- network.Packet{
                 Data: []byte("A")}
 
         case <- t2.C:
-            fmt.Println("Sending to any master")
-            channels.to_any_master <- network.OutgoingPacket{
+            fmt.Println("[NETTEST]\tSending to any master")
+            channels.to_master <- network.Packet{
                 Data: []byte("BB")}
 
-        case <- t3.C:
-            fmt.Println("Sending to master")
-            channels.to_master <- network.OutgoingPacket{
-                Destination: "127.0.0.1:20012",
-                Data: []byte("CCC")}
-
         case p := <- channels.from_client:
-            log.Println("Client sent:", len(p.Data), "bytes from", p.Sender)
+            fmt.Println("[NETTEST]\tClient sent:", len(p.Data), "bytes from", p.Address)
 
         case p := <- channels.from_master:
-            log.Println("Master sent:", len(p.Data), "bytes from", p.Sender)
+            fmt.Println("[NETTEST]\tMaster sent:", len(p.Data), "bytes from", p.Address)
         }
     }
 }
 
 func main() {
-    var listen_port int
     var start_as_master bool
-    flag.IntVar(&listen_port, "port", 20012, "Port that all clients send and listen to")
     flag.BoolVar(&start_as_master, "master", false, "Start as master")
     flag.Parse()
 
@@ -207,11 +194,10 @@ func main() {
     channels.floor_reached   = make(chan int)
     channels.stop_button     = make(chan bool)
     channels.obstruction     = make(chan bool)
-    channels.to_master       = make(chan network.OutgoingPacket)
-    channels.to_all_clients  = make(chan network.OutgoingPacket)
-    channels.to_any_master   = make(chan network.OutgoingPacket)
-    channels.from_master     = make(chan network.IncomingPacket)
-    channels.from_client     = make(chan network.IncomingPacket)
+    channels.to_master       = make(chan network.Packet)
+    channels.to_clients      = make(chan network.Packet)
+    channels.from_master     = make(chan network.Packet)
+    channels.from_client     = make(chan network.Packet)
 
     go driver.Init(
         channels.button_pressed,
@@ -219,34 +205,16 @@ func main() {
         channels.stop_button,
         channels.obstruction)
 
-    go network.Init(
-        listen_port,
-        channels.to_master,
-        channels.to_all_clients,
-        channels.to_any_master,
-        channels.from_master,
-        channels.from_client)
-
     go lift.Init(
         channels.completed_floor,
         channels.reached_target)
 
-    // TestNetwork(channels)
-    if start_as_master {
-        // The master also runs the client routine concurrently
-        go WaitForMaster(channels, nil)
-        WaitForBackup(channels)
-    } else {
+    go network.ClientWorker(channels.from_master, channels.to_master)
 
-        // This is terrible. And it does not fix the problem that is
-        // yet to come. Namely, when the backup should take over as master.
-        // Then it needs to stop absorbing these.
-        go func(from_client chan network.IncomingPacket) {
-            for {
-                <- from_client:
-                fmt.Println("Heard an echo")
-            }
-        }(channels.from_client)
+    if start_as_master {
+        go WaitForMaster(channels, nil)
+        WaitForBackup(channels, nil)
+    } else {
         WaitForMaster(channels, nil)
     }
 }
