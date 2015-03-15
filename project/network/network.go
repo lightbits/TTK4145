@@ -30,14 +30,16 @@ func getSenderID(sender *net.UDPAddr) ID {
 func GetMachineID() ID {
     ifaces, err := net.InterfaceAddrs()
     if err != nil {
-        log.Println(err)
+        log.Fatal(err)
     }
     for _, addr := range(ifaces) {
-        if addr.String() != "0.0.0.0" {
-            return ID(addr.String())
+        if ip_addr, ok := addr.(*net.IPNet); ok && !ip_addr.IP.IsLoopback() {
+            if v4 := ip_addr.IP.To4(); v4 != nil {
+                return ID(v4.String())
+            }
         }
     }
-    return "0.0.0.0"
+    return "127.0.0.1"
 }
 
 func listen(socket *net.UDPConn,
