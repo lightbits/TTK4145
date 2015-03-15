@@ -1,3 +1,26 @@
+
+Network:
+    client_listen_port = 10012
+    master_listen_port = 20012
+
+    // trenger vi å kunne sende direkte til master?
+    // eller holder det å bare (sløsig) broadcaste alt?
+    LaunchClientWorker(from_master, to_master):
+        socket = CreateSocket(":client_listen_port")
+        listen(socket, from_master)
+        broadcast(socket, master_listen_port, to_master)
+
+    LaunchMasterWorker(from_client, to_clients):
+        socket = CreateSocket(":master_listen_port")
+        listen(socket, from_client)
+        broadcast(socket, client_listen_port, to_clients)
+
+
+
+
+
+
+
 WaitForBackup:
     select {
         case p := <- incoming:
