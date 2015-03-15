@@ -17,6 +17,29 @@ type Packet struct {
 var client_port int = 10012
 var master_port int = 20012
 
+// TODO: Should we also include the port number?
+// If so, return ID(sender.String()).
+// It is needed to differentiate an ID from
+// a machine that is both running a master instance
+// and a client instance, but we currently don't
+// need that.
+func getSenderID(sender *net.UDPAddr) ID {
+    return ID(sender.IP.String())
+}
+
+func GetMachineID() ID {
+    ifaces, err := net.InterfaceAddrs()
+    if err != nil {
+        log.Println(err)
+    }
+    for _, addr := range(ifaces) {
+        if addr.String() != "0.0.0.0" {
+            return ID(addr.String())
+        }
+    }
+    return "0.0.0.0"
+}
+
 func listen(socket *net.UDPConn,
     incoming chan Packet) {
 
@@ -24,7 +47,7 @@ func listen(socket *net.UDPConn,
         bytes := make([]byte, 1024)
         read_bytes, sender, err := socket.ReadFromUDP(bytes)
         if err == nil {
-            incoming <- Packet{ID(sender.String()), bytes[:read_bytes]}
+            incoming <- Packet{getSenderID(sender), bytes[:read_bytes]}
         } else {
             log.Println(err)
         }
@@ -49,7 +72,9 @@ func broadcast(socket *net.UDPConn, to_port int, outgoing chan Packet) {
 }
 
 func bind(port int) *net.UDPConn {
-    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", port))
+    // local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", port)) // Debugging
+
+    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
     if err != nil {
         log.Fatal(err)
     }

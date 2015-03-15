@@ -24,7 +24,8 @@ type ClientData struct {
 }
 
 type MasterData struct {
-    Orders   []Order
+    AssignedBackup network.ID
+    Orders         []Order
 }
 
 type ClientType struct {
@@ -82,14 +83,18 @@ func EncodeClientData(c ClientData) []byte {
 
 func WaitForBackup(c Channels, initial_queue []Order) {
     go network.MasterWorker(c.from_client, c.to_clients)
-
+    machine_id := network.GetMachineID()
+    fmt.Println("[MASTER]\tRunning on machine", machine_id)
     fmt.Println("[MASTER]\tWaiting for backup...")
     for {
         select {
         case packet := <- c.from_client:
-            // if packet.Sender != machine_id {
-            Master(c, packet.Address)
-            return
+            if packet.Address != machine_id {
+                Master(c, packet.Address)
+                return
+            } else {
+                fmt.Println("[MASTER]\tCannot use own machine as backup client")
+            }
         }
     }
 }
