@@ -16,7 +16,31 @@ Network:
         broadcast(socket, client_listen_port, to_clients)
 
 
+Lift:
+    target = 0
+    next_target = 0
+    for select {
+        case f := <- next_target_changed:
+            next_target = f
 
+        caes <- door_timer:
+            if last_passed_floor == target:
+                completed_floor <- target
+                if next_target != target:
+                    target = next_target
+                    state = Moving
+                else:
+                    state = Idle
+        case f := <- floor_reached:
+            if f == target:
+                state = DoorOpen
+        case btn := <- button_pressed:
+
+        case <- stop_pressed:
+            // ignore
+        case <- obstruction:
+            // ignore
+    }
 
 
 
@@ -39,19 +63,6 @@ Master(backup):
                 go WaitForBackup
                 return
 
-
-Lift:
-    for select {
-        case f := <- new_target_floor:
-
-        case f := <- floor_reached:
-        case btn := <- button_pressed:
-
-        case <- stop_pressed:
-            // ignore
-        case <- obstruction:
-            // ignore
-    }
 
 Client(master_address):
     time_to_send := time.NewTicker(1 * time.Second)

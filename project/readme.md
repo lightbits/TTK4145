@@ -12,6 +12,7 @@ Todo
 * Implement client
 * Implement wait for master
 * Implement master
+* Implement lift controller
 
 Done
 ----
@@ -19,7 +20,6 @@ Done
 * Implement timeouts
 * Implement network module
 * Implement driver
-* Implement lift controller
 
 Choices made
 ------------
