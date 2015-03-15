@@ -2,6 +2,7 @@ package driver
 
 import (
     "time"
+    "fmt"
 )
 
 type ButtonType int
@@ -17,27 +18,42 @@ type OrderButton struct {
 }
 
 func MotorUp() {
+    fmt.Println("[DRVR]\tMotor up")
 }
 
 func MotorDown() {
+    fmt.Println("[DRVR]\tMotor down")
 }
 
 func MotorStop() {
+    fmt.Println("[DRVR]\tMotor stop")
 }
 
-func SetButtonLamp(btn ButtonType, floor int, set bool) {
+func SetButtonLamp(btn OrderButton, set bool) {
+    if set {
+        fmt.Println("[DRVR]\tLit button", btn.Type, "at", btn.Floor)
+    } else {
+        fmt.Println("[DRVR]\tUnlit button", btn.Type, "at", btn.Floor)
+    }
 }
 
 func SetDoorOpenLamp(on bool) {
+    fmt.Println("[DRVR]\tDoor open =", on)
 }
 
 func SetStopLamp(on bool) {
+    fmt.Println("[DRVR]\tStop lamp on =", on)
 }
 
 func SetFloorIndicator(floor int) {
+    fmt.Println("[DRVR]\tFloor indicator =", floor)
 }
 
-func Init(button_pressed chan OrderButton,
+func Init() {
+    fmt.Println("[DRVR]\tInitialized")
+}
+
+func Poll(button_pressed chan OrderButton,
           floor_reached  chan int,
           stop_pressed   chan bool,
           obstruction    chan bool) {

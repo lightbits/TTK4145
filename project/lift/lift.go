@@ -20,7 +20,7 @@ func Init(
         DoorOpen
         Moving
     )
-    state := Startup
+    state := Idle
 
     for {
         select {
@@ -29,7 +29,6 @@ func Init(
                 case DoorOpen:
                     completed_floor <- true
                     state = Idle
-                case Startup: log.Fatal("Door closed @ Startup")
                 case Idle:    log.Fatal("Door closed @ Idle")
                 case Moving:  log.Fatal("Door closed @ Moving")
             }
@@ -39,8 +38,6 @@ func Init(
                 case Moving:
                     door_timer.Reset(3 * time.Second)
                     state = DoorOpen
-                case Startup:
-                    state = Idle
                 case Idle:     log.Fatal("Reached target @ Idle")
                 case DoorOpen: log.Fatal("Reached target @ DoorOpen")
             }

@@ -8,7 +8,8 @@ import (
     "encoding/json"
     "./lift"
     "./network"
-    "./fakedriver"
+    "./driver"
+    // "./fakedriver"
 )
 
 type Order struct {
@@ -187,6 +188,22 @@ func TestNetwork(channels Channels) {
     }
 }
 
+func TestDriver(channels Channels) {
+    for {
+        select {
+        case btn := <- channels.button_pressed:
+            fmt.Println("[TEST]\tButton pressed")
+            driver.SetButtonLamp(btn, true)
+        case <- channels.floor_reached:
+            fmt.Println("[TEST]\tFloor reached")
+        case <- channels.stop_button:
+            fmt.Println("[TEST]\tStop button pressed")
+        case <- channels.obstruction:
+            fmt.Println("[TEST]\tObstruction changed")
+        }
+    }
+}
+
 func main() {
     var start_as_master bool
     flag.BoolVar(&start_as_master, "master", false, "Start as master")
@@ -204,7 +221,9 @@ func main() {
     channels.from_master     = make(chan network.Packet)
     channels.from_client     = make(chan network.Packet)
 
-    go driver.Init(
+    driver.Init()
+
+    go driver.Poll(
         channels.button_pressed,
         channels.floor_reached,
         channels.stop_button,
@@ -214,12 +233,13 @@ func main() {
         channels.completed_floor,
         channels.reached_target)
 
-    go network.ClientWorker(channels.from_master, channels.to_master)
+    TestDriver(channels)
+    // go network.ClientWorker(channels.from_master, channels.to_master)
 
-    if start_as_master {
-        go WaitForMaster(channels, nil)
-        WaitForBackup(channels, nil)
-    } else {
-        WaitForMaster(channels, nil)
-    }
+    // if start_as_master {
+    //     go WaitForMaster(channels, nil)
+    //     WaitForBackup(channels, nil)
+    // } else {
+    //     WaitForMaster(channels, nil)
+    // }
 }
