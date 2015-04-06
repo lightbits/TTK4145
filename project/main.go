@@ -42,13 +42,10 @@ type Channels struct {
     from_client     chan network.Packet
 }
 
-func DecodeMasterPacket(b []byte) MasterData {
+func DecodeMasterPacket(b []byte) (MasterData, error) {
     var result MasterData
     err := json.Unmarshal(b, &result)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return result
+    return result, err
 }
 
 func DecodeClientPacket(b []byte) (ClientData, error) {
@@ -111,24 +108,28 @@ func IsSameOrder(a, b Order) bool {
 }
 
 func MasterLoop(c Channels, backup network.ID) {
+    SEND_INTERVAL    := 2 * time.Second
+    TIMEOUT_INTERVAL := 5 * time.Second
+
     type Client struct {
         ID              network.ID
         LastPassedFloor int
         Timer           *time.Timer
     }
 
-    fmt.Println("[MASTER]\tStarting master with backup", backup)
-    time_to_send := time.NewTicker(2*time.Second)
+    time_to_send     := time.NewTicker(SEND_INTERVAL)
     client_timed_out := make(chan network.ID)
-    orders := make([]Order, 0)
+
+    orders  := make([]Order, 0)
     clients := make(map[network.ID]Client)
 
+    fmt.Println("[MASTER]\tStarting master with backup", backup)
     for {
         select {
         case packet := <- c.from_client:
             fmt.Println("[MASTER]\tClient said", string(packet.Data))
 
-            payload, err := DecodeClientPacket(packet.Data)
+            data, err := DecodeClientPacket(packet.Data)
             if err != nil {
                 break
             }
@@ -137,24 +138,25 @@ func MasterLoop(c Channels, backup network.ID) {
             sender_id := packet.Address
             client, exists := clients[sender_id]
             if exists {
-                client.Timer.Reset(5 * time.Second)
-                client.LastPassedFloor = payload.LastPassedFloor
+                client.Timer.Reset(TIMEOUT_INTERVAL)
+                client.LastPassedFloor = data.LastPassedFloor
                 clients[sender_id] = client
             } else {
-                timer := time.NewTimer(5 * time.Second)
-                clients[sender_id] = Client{sender_id, payload.LastPassedFloor, timer}
+                timer := time.NewTimer(TIMEOUT_INTERVAL)
+                clients[sender_id] = Client{sender_id, data.LastPassedFloor, timer}
                 go ListenForClientTimeout(sender_id, timer, client_timed_out)
             }
 
             // Synchronize our list of jobs with any new or finished
             // jobs given by the client's requests
-            requests := payload.Requests
-            fmt.Println(requests)
+            requests := data.Requests
             for _, r := range(requests) {
                 is_new_order := true
                 for _, o := range(orders) {
                     if IsSameOrder(o, r) {
-                        // TODO: if r.Done then we should delete o
+                        if r.Done {
+                            o.Done = true
+                        }
                         is_new_order = false
                     }
                 }
@@ -163,9 +165,28 @@ func MasterLoop(c Channels, backup network.ID) {
                 }
             }
 
+            // Delete finished jobs
+            for i, o := range(orders) {
+                if o.Done {
+                    orders = append(orders[:i], orders[i+1:]...)
+                }
+            }
+
         case <- time_to_send.C:
+            // TODO: Actually distribute work; this is hodgepodge!
+            fmt.Println(len(clients))
+            for i, o := range(orders) {
+                for _, c := range(clients) {
+                    o.TakenBy = c.ID
+                    orders[i] = o
+                }
+            }
+            data := MasterData {
+                AssignedBackup: backup,
+                Orders:         orders,
+            }
             c.to_clients <- network.Packet {
-                Data: []byte("This is an update from your master!"),
+                Data: EncodeMasterData(data),
             }
 
         case who := <- client_timed_out:
@@ -199,31 +220,74 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 }
 
 func ClientLoop(c Channels, master network.ID) {
-    fmt.Println("[CLIENT]\tStarting client")
-    is_backup := false
-    master_timeout := time.NewTimer(5*time.Second)
-    time_to_send := time.NewTicker(2*time.Second)
-    local_queue := make([]Order, 0)
-    last_passed_floor := 0
+    MASTER_TIMEOUT_INTERVAL := 5 * time.Second
+    SEND_INTERVAL := 2 * time.Second
+
+    master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
+    time_to_send := time.NewTicker(SEND_INTERVAL)
+
+    orders   := make([]Order, 0) // Local copy of master's queue
     requests := make([]Order, 0)
+
+    our_id := network.GetMachineID()
+
+    target_floor := 0
+    last_passed_floor := 0
 
     requests = append(requests, Order {
         Button: driver.OrderButton{5, driver.ButtonUp}})
 
+    is_backup := false
+    fmt.Println("[CLIENT]\tStarting client")
     for {
         select {
         case packet := <- c.from_master:
             fmt.Println("[CLIENT]\tMaster said", string(packet.Data))
+            master_timeout.Reset(MASTER_TIMEOUT_INTERVAL)
+            data, err := DecodeMasterPacket(packet.Data)
+            if err != nil {
+                break
+            }
+
+            if data.AssignedBackup == our_id {
+                fmt.Println("[CLIENT]\tWe are the backup!")
+                is_backup = true
+            } else {
+                is_backup = false
+            }
+
+            // TODO: Clear all button lamps
+
+            orders = data.Orders
+            for _, o := range(orders) {
+
+                if o.TakenBy == "" {
+                    log.Fatal("[ERROR]\tA non-taken order was received")
+                }
+
+                // driver.SetButtonLamp(o.Button, true)
+
+                if o.TakenBy == our_id && o.Priority {
+                    target_floor = o.Button.Floor
+                    fmt.Println("[CLIENT]\tTarget floor:", target_floor)
+                }
+            }
 
         case <- master_timeout.C:
             if is_backup {
-                WaitForBackup(c, local_queue)
+                fmt.Println("[CLIENT]\tMaster timed out; taking over!")
+                // Note that if there were any unacknowledged new orders
+                // or finished orders in requests, they will be left out.
+                // If they were new orders, it is ok since we have yet to
+                // give user feedback. If they were completed orders...
+                // maybe ok?
+                WaitForBackup(c, orders)
             }
 
         case <- time_to_send.C:
-            payload := ClientData{last_passed_floor, requests}
+            data := ClientData{last_passed_floor, requests}
             c.to_master <- network.Packet {
-                Data: EncodeClientData(payload),
+                Data: EncodeClientData(data),
             }
 
         // case button := <- c.button_pressed:

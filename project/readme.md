@@ -9,9 +9,7 @@ Todo
     - Prioritize among lifts by distributing to closest?
     - Mark single job as "DoThisNow"
 
-* Implement client
-* Implement wait for master
-* Implement master
+* Synchronize order queue across master and client
 * Implement lift controller
 
 Done
