@@ -10,7 +10,6 @@
         "draw_centered": true,
         "drag_text": false,
         "gutter": true,
-        "line_numbers": true,
         "word_wrap": true,
         "wrap_width": 100
     }

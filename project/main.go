@@ -8,8 +8,8 @@ import (
     "encoding/json"
     "./lift"
     "./network"
-    "./driver"
-    // "./fakedriver"
+    // "./driver"
+    "./fakedriver"
 )
 
 type Order struct {
@@ -140,11 +140,16 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 
 }
 
+// func AddOrderToQueue(queue []Order, order) {
+
+// }
+
 func Client(c Channels, master network.ID) {
     fmt.Println("[CLIENT]\tStarting client")
     is_backup := false
     master_timeout := time.NewTimer(5*time.Second)
     local_queue := make([]Order, 0)
+
     for {
         select {
         case packet := <- c.from_master:
@@ -153,11 +158,13 @@ func Client(c Channels, master network.ID) {
             if is_backup {
                 WaitForBackup(c, local_queue)
             }
-        // case <- c.completed_floor:
+
         // case button := <- c.button_pressed:
+
         // case floor := <- c.floor_reached:
         // case stopped := <- c.stop_button:
         // case obstructed := <- c.obstruction:
+        // case <- c.completed_floor:
         }
     }
 }
@@ -233,13 +240,12 @@ func main() {
         channels.completed_floor,
         channels.reached_target)
 
-    TestDriver(channels)
-    // go network.ClientWorker(channels.from_master, channels.to_master)
+    // TestDriver(channels)
 
-    // if start_as_master {
-    //     go WaitForMaster(channels, nil)
-    //     WaitForBackup(channels, nil)
-    // } else {
-    //     WaitForMaster(channels, nil)
-    // }
+    if start_as_master {
+        go WaitForBackup(channels, nil)
+    }
+
+    go network.ClientWorker(channels.from_master, channels.to_master)
+    WaitForMaster(channels, nil)
 }

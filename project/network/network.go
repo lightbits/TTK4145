@@ -42,8 +42,7 @@ func GetMachineID() ID {
     return "127.0.0.1"
 }
 
-func listen(socket *net.UDPConn,
-    incoming chan Packet) {
+func listen(socket *net.UDPConn, incoming chan Packet) {
 
     for {
         bytes := make([]byte, 1024)
