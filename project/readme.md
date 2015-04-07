@@ -5,16 +5,12 @@ Todo
     - How do we handle case when backup loses connection to primary,
     but other clients remain connected to primary (which gives two primaries)?
 
-* Implement job prioritization
-    - DistributeWork function
-    - Prioritize among lifts by distributing to closest?
-    - Mark single job as "DoThisNow"
-
-* Synchronize order queue across master and client
 * Implement lift controller
 
 Done
 ----
+* Implement job prioritization (DistributeWork)
+* Synchronize order queue across master and client
 * Implement wait for backup
 * Implement timeouts
 * Implement network module

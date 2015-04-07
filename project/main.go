@@ -19,6 +19,14 @@ type Order struct {
     Priority bool
 }
 
+type Client struct {
+    ID              network.ID
+    LastPassedFloor int
+    TargetFloor     int
+    Timer           *time.Timer
+    HasTimedOut     bool
+}
+
 type ClientData struct {
     LastPassedFloor int
     TargetFloor     int
@@ -99,18 +107,6 @@ func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan netwo
     }
 }
 
-func (o Order) IsNotTaken() bool {
-    return o.TakenBy == network.InvalidID
-}
-
-type Client struct {
-    ID              network.ID
-    LastPassedFloor int
-    TargetFloor     int
-    Timer           *time.Timer
-    HasTimedOut     bool
-}
-
 func DistanceSqrd(a, b int) int {
     return (a - b) * (a - b)
 }
@@ -179,7 +175,8 @@ func DistributeWork(clients map[network.ID]Client, orders []Order) {
     // Broad-phase distribution
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
-           (o.IsNotTaken() || clients[o.TakenBy].HasTimedOut) {
+           (o.TakenBy == network.InvalidID ||
+            clients[o.TakenBy].HasTimedOut) {
 
             closest := ClosestActiveLift(clients, o.Button.Floor)
             if closest == network.InvalidID {
