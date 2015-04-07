@@ -375,8 +375,8 @@ func ClientLoop(c Channels, master network.ID) {
             orders = data.Orders
             for _, o := range(orders) {
 
-                if o.TakenBy == "" {
-                    log.Fatal("[ERROR]\tA non-taken order was received")
+                if o.TakenBy == network.InvalidID {
+                    log.Fatal("[CLIENT]\tA non-taken order was received")
                 }
 
                 // driver.SetButtonLamp(o.Button, true)
@@ -384,6 +384,39 @@ func ClientLoop(c Channels, master network.ID) {
                 if o.TakenBy == our_id && o.Priority {
                     target_floor = o.Button.Floor
                     fmt.Println("[CLIENT]\tTarget floor:", target_floor)
+                }
+            }
+
+            // Clear requests that are acknowledged
+            for i, r := range(requests) {
+                found := false
+                safe_to_delete := false
+                for _, o := range(orders) {
+                    if IsSameOrder(r, o) {
+                        found = true
+                        if r.Done && !o.Done {
+                            // We have finished the order, but are waiting
+                            // for the master to acknowledge that
+                        } else if r.Done && o.Done {
+                            // This shouldn't happen?
+                        } else if !r.Done && o.Done {
+                            // This shouldn't happen either?
+                        } else if !r.Done && !o.Done {
+                            // Aha! Now it is safe to remove it from
+                            // out requests, as the master has acked it.
+                            safe_to_delete = true
+                        }
+                    }
+                }
+                if !found && r.Done {
+                    // This means the master has acknowledged that the
+                    // order was finished, and it is safe to delete
+                    // the request.
+                    safe_to_delete = true
+                }
+
+                if safe_to_delete {
+                    requests = append(requests[:i], requests[i+1:]...)
                 }
             }
 
