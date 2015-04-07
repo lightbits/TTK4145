@@ -21,6 +21,7 @@ type Order struct {
 
 type ClientData struct {
     LastPassedFloor int
+    TargetFloor     int
     Requests        []Order
 }
 
@@ -98,9 +99,116 @@ func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan netwo
     }
 }
 
-// func DistributeWork(lift_positions map[network.ID]int, orders []Order) {
+func (o Order) IsNotTaken() bool {
+    return o.TakenBy == network.InvalidID
+}
 
-// }
+type Client struct {
+    ID              network.ID
+    LastPassedFloor int
+    TargetFloor     int
+    Timer           *time.Timer
+    HasTimedOut     bool
+}
+
+func DistanceSqrd(a, b int) int {
+    return (a - b) * (a - b)
+}
+
+func ClosestActiveLift(clients map[network.ID]Client, floor int) network.ID {
+    closest_df := -1
+    closest_id := network.InvalidID
+    for id, client := range(clients) {
+        if client.HasTimedOut {
+            continue
+        }
+        df := DistanceSqrd(client.LastPassedFloor, floor)
+        if closest_df == -1 || df < closest_df {
+            closest_df = df
+            closest_id = id
+        }
+    }
+    return closest_id
+}
+
+func ClosestOrderNear(owner network.ID, orders []Order, floor int) int {
+    closest_i := -1
+    closest_d := -1
+    for i, o := range(orders) {
+        if o.TakenBy != owner {
+            continue
+        }
+        d := DistanceSqrd(o.Button.Floor, floor)
+        if closest_i == -1 || d < closest_d {
+            closest_i = i
+            closest_d = d
+        }
+    }
+    return closest_i
+}
+
+func ClosestOrderAlong(owner network.ID, orders []Order, from, to int) int {
+    closest_i := -1
+    closest_d := -1
+    for i, o := range(orders) {
+        if o.TakenBy != owner {
+            continue
+        }
+        // Deliberately not using o.Floor >= from, since
+        // the lift might not actually be at its last passed
+        // floor by the time we distribute work.
+        in_range   := o.Button.Floor > from && o.Button.Floor <= to
+        dir_up     := to - from > 0 // Likewise, these are not using = since we
+        dir_down   := to - from < 0 // assert that LPF != TF when calling this
+        order_up   := o.Button.Type == driver.ButtonUp
+        order_down := o.Button.Type == driver.ButtonDown
+        order_out  := o.Button.Type == driver.ButtonOut
+        if in_range && ((dir_up   && (order_up   || order_out)) ||
+                        (dir_down && (order_down || order_out))) {
+            d := DistanceSqrd(o.Button.Floor, from)
+            if closest_i == -1 || d < closest_d {
+                closest_i = i
+                closest_d = d
+            }
+        }
+    }
+    return closest_i
+}
+
+func DistributeWork(clients map[network.ID]Client, orders []Order) {
+    // Broad-phase distribution
+    for i, o := range(orders) {
+        if (o.Button.Type != driver.ButtonOut) &&
+           (o.IsNotTaken() || clients[o.TakenBy].HasTimedOut) {
+
+            closest := ClosestActiveLift(clients, o.Button.Floor)
+            if closest == network.InvalidID {
+                log.Fatal("Cannot distribute work when there are no lifts!")
+            }
+            o.TakenBy = closest
+            orders[i] = o
+        }
+    }
+
+    // Narrow-phase distribution (sort each lift queue)
+    for id, c := range(clients) {
+        // If the client is already heading towards a floor, we
+        // don't want to change its direction. But we if there
+        // is a new floor that is closer along the way, we can
+        // stop there first. But only if that order is also
+        // headed the same way...
+
+        // Note that the LPF will eventually equal TF, as the client
+        // can only go to the one floor which master marks as PRIORITY.
+        if c.LastPassedFloor == c.TargetFloor {
+            closest := ClosestOrderNear(id, orders, c.LastPassedFloor)
+            orders[closest].Priority = true
+        } else {
+            closest := ClosestOrderAlong(id, orders, c.LastPassedFloor, c.TargetFloor)
+            orders[closest].Priority = true
+        }
+    }
+}
 
 func IsSameOrder(a, b Order) bool {
     return a.Button.Floor == b.Button.Floor &&
@@ -110,12 +218,6 @@ func IsSameOrder(a, b Order) bool {
 func MasterLoop(c Channels, backup network.ID) {
     SEND_INTERVAL    := 2 * time.Second
     TIMEOUT_INTERVAL := 5 * time.Second
-
-    type Client struct {
-        ID              network.ID
-        LastPassedFloor int
-        Timer           *time.Timer
-    }
 
     time_to_send     := time.NewTicker(SEND_INTERVAL)
     client_timed_out := make(chan network.ID)
@@ -143,7 +245,13 @@ func MasterLoop(c Channels, backup network.ID) {
                 clients[sender_id] = client
             } else {
                 timer := time.NewTimer(TIMEOUT_INTERVAL)
-                clients[sender_id] = Client{sender_id, data.LastPassedFloor, timer}
+                client := Client {
+                    ID:              sender_id,
+                    LastPassedFloor: data.LastPassedFloor,
+                    TargetFloor:     data.TargetFloor,
+                    Timer:           timer,
+                }
+                clients[sender_id] = client
                 go ListenForClientTimeout(sender_id, timer, client_timed_out)
             }
 
@@ -151,6 +259,7 @@ func MasterLoop(c Channels, backup network.ID) {
             // jobs given by the client's requests
             requests := data.Requests
             for _, r := range(requests) {
+
                 is_new_order := true
                 for _, o := range(orders) {
                     if IsSameOrder(o, r) {
@@ -160,6 +269,11 @@ func MasterLoop(c Channels, backup network.ID) {
                         is_new_order = false
                     }
                 }
+
+                if r.Button.Type == driver.ButtonOut {
+                    r.TakenBy = sender_id
+                }
+
                 if is_new_order {
                     orders = append(orders, r)
                 }
@@ -173,14 +287,7 @@ func MasterLoop(c Channels, backup network.ID) {
             }
 
         case <- time_to_send.C:
-            // TODO: Actually distribute work; this is hodgepodge!
-            fmt.Println(len(clients))
-            for i, o := range(orders) {
-                for _, c := range(clients) {
-                    o.TakenBy = c.ID
-                    orders[i] = o
-                }
-            }
+            DistributeWork(clients, orders)
             data := MasterData {
                 AssignedBackup: backup,
                 Orders:         orders,
@@ -191,6 +298,13 @@ func MasterLoop(c Channels, backup network.ID) {
 
         case who := <- client_timed_out:
             fmt.Println("[MASTER]\tClient", who, "timed out")
+            client, exists := clients[who]
+            if exists {
+                client.HasTimedOut = true
+                clients[who] = client
+            } else {
+                log.Fatal("[MASTER]\tA non-existent client timed out")
+            }
         }
     }
 }
@@ -231,7 +345,7 @@ func ClientLoop(c Channels, master network.ID) {
 
     our_id := network.GetMachineID()
 
-    target_floor := 0
+    target_floor      := 0
     last_passed_floor := 0
 
     requests = append(requests, Order {
@@ -285,7 +399,11 @@ func ClientLoop(c Channels, master network.ID) {
             }
 
         case <- time_to_send.C:
-            data := ClientData{last_passed_floor, requests}
+            data := ClientData {
+                LastPassedFloor: last_passed_floor,
+                TargetFloor:     target_floor,
+                Requests:        requests,
+            }
             c.to_master <- network.Packet {
                 Data: EncodeClientData(data),
             }

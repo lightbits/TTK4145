@@ -7,6 +7,7 @@ import (
 )
 
 type ID string
+const InvalidID ID = ""
 
 type Packet struct {
     Address ID

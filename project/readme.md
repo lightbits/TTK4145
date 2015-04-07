@@ -6,6 +6,7 @@ Todo
     but other clients remain connected to primary (which gives two primaries)?
 
 * Implement job prioritization
+    - DistributeWork function
     - Prioritize among lifts by distributing to closest?
     - Mark single job as "DoThisNow"
 
