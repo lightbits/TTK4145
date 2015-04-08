@@ -22,14 +22,12 @@ type Order struct {
 type Client struct {
     ID              network.ID
     LastPassedFloor int
-    TargetFloor     int
     Timer           *time.Timer
     HasTimedOut     bool
 }
 
 type ClientData struct {
     LastPassedFloor int
-    TargetFloor     int
     Requests        []Order
 }
 
@@ -171,8 +169,29 @@ func ClosestOrderAlong(owner network.ID, orders []Order, from, to int) int {
     return closest_i
 }
 
+/*
+This is not a very good prioritization algorithm, but
+we have the data we need if we want to make it better.
+--
+The distribution/prioritization works in two steps.
+One is a global pass, which distributes all non-taken
+orders across all the lifts, based purely on proximity.
+
+The second pass works on each individual lift, picking
+out a single order that should be prioritized. If the
+lift is idle (i.e. it has reached its target), the next
+order is chosen to be whichever is closest.
+
+If the lift is moving, we check if there is an order
+for the same direction that is closer along its path.
+If so, we make that the priority.
+
+Note that if the lift completes an order, the order will
+be deleted from the master side. When this happens, the
+lift might not have a target floor. But this is OK, since
+we interpret this as the lift being idle.
+*/
 func DistributeWork(clients map[network.ID]Client, orders []Order) {
-    // Broad-phase distribution
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
            (o.TakenBy == network.InvalidID ||
@@ -187,21 +206,21 @@ func DistributeWork(clients map[network.ID]Client, orders []Order) {
         }
     }
 
-    // Narrow-phase distribution (sort each lift queue)
     for id, c := range(clients) {
-        // If the client is already heading towards a floor, we
-        // don't want to change its direction. But we if there
-        // is a new floor that is closer along the way, we can
-        // stop there first. But only if that order is also
-        // headed the same way...
-
-        // Note that the LPF will eventually equal TF, as the client
-        // can only go to the one floor which master marks as PRIORITY.
-        if c.LastPassedFloor == c.TargetFloor {
-            closest := ClosestOrderNear(id, orders, c.LastPassedFloor)
-            orders[closest].Priority = true
+        target_floor := -1
+        current_pri  := -1
+        for oi, o := range(orders) {
+            if o.TakenBy == id && o.Priority {
+                target_floor = o.Button.Floor
+                current_pri = oi
+            }
+        }
+        if target_floor >= 0 {
+            next_pri := ClosestOrderAlong(id, orders, c.LastPassedFloor, target_floor)
+            orders[current_pri].Priority = false
+            orders[next_pri].Priority = true
         } else {
-            closest := ClosestOrderAlong(id, orders, c.LastPassedFloor, c.TargetFloor)
+            closest := ClosestOrderNear(id, orders, c.LastPassedFloor)
             orders[closest].Priority = true
         }
     }
@@ -245,7 +264,6 @@ func MasterLoop(c Channels, backup network.ID) {
                 client := Client {
                     ID:              sender_id,
                     LastPassedFloor: data.LastPassedFloor,
-                    TargetFloor:     data.TargetFloor,
                     Timer:           timer,
                 }
                 clients[sender_id] = client
@@ -431,7 +449,6 @@ func ClientLoop(c Channels, master network.ID) {
         case <- time_to_send.C:
             data := ClientData {
                 LastPassedFloor: last_passed_floor,
-                TargetFloor:     target_floor,
                 Requests:        requests,
             }
             c.to_master <- network.Packet {
