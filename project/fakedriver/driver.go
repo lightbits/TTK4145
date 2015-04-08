@@ -37,6 +37,10 @@ func SetButtonLamp(btn OrderButton, set bool) {
     }
 }
 
+func ClearAllButtonLamps() {
+
+}
+
 func SetDoorOpenLamp(on bool) {
     fmt.Println("[DRVR]\tDoor open =", on)
 }
@@ -60,7 +64,7 @@ func Poll(button_pressed chan OrderButton,
 
     for {
         floor_reached <- 0
-        time.Sleep(1 * time.Second)
+        time.Sleep(5 * time.Second)
         button_pressed <- OrderButton{3, ButtonDown}
         button_pressed <- OrderButton{4, ButtonUp}
         time.Sleep(1 * time.Second)

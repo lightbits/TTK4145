@@ -209,19 +209,25 @@ func DistributeWork(clients map[network.ID]Client, orders []Order) {
     for id, c := range(clients) {
         target_floor := -1
         current_pri  := -1
-        for oi, o := range(orders) {
-            if o.TakenBy == id && o.Priority {
-                target_floor = o.Button.Floor
-                current_pri = oi
+        for index, order := range(orders) {
+            if order.TakenBy == id && order.Priority {
+                target_floor = order.Button.Floor
+                current_pri = index
             }
         }
+
+        better_pri := -1
         if target_floor >= 0 {
-            next_pri := ClosestOrderAlong(id, orders, c.LastPassedFloor, target_floor)
-            orders[current_pri].Priority = false
-            orders[next_pri].Priority = true
+            better_pri = ClosestOrderAlong(id, orders, c.LastPassedFloor, target_floor)
         } else {
-            closest := ClosestOrderNear(id, orders, c.LastPassedFloor)
-            orders[closest].Priority = true
+            better_pri = ClosestOrderNear(id, orders, c.LastPassedFloor)
+        }
+
+        if better_pri >= 0 {
+            if current_pri >= 0 {
+                orders[current_pri].Priority = false
+            }
+            orders[better_pri].Priority = true
         }
     }
 }
@@ -355,18 +361,13 @@ func ClientLoop(c Channels, master network.ID) {
     master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
     time_to_send := time.NewTicker(SEND_INTERVAL)
 
-    orders   := make([]Order, 0) // Local copy of master's queue
-    requests := make([]Order, 0)
+    orders      := make([]Order, 0) // Local copy of master's queue
+    requests    := make([]Order, 0) // Unacknowledged local events
 
     our_id := network.GetMachineID()
-
-    target_floor      := 0
     last_passed_floor := 0
-
-    requests = append(requests, Order {
-        Button: driver.OrderButton{5, driver.ButtonUp}})
-
     is_backup := false
+
     fmt.Println("[CLIENT]\tStarting client")
     for {
         select {
@@ -385,7 +386,7 @@ func ClientLoop(c Channels, master network.ID) {
                 is_backup = false
             }
 
-            // TODO: Clear all button lamps
+            driver.ClearAllButtonLamps()
 
             orders = data.Orders
             for _, o := range(orders) {
@@ -397,13 +398,13 @@ func ClientLoop(c Channels, master network.ID) {
                 // driver.SetButtonLamp(o.Button, true)
 
                 if o.TakenBy == our_id && o.Priority {
-                    target_floor = o.Button.Floor
-                    fmt.Println("[CLIENT]\tTarget floor:", target_floor)
+                    fmt.Println("[CLIENT]\tTarget floor:", o.Button.Floor)
                 }
             }
 
             // Clear requests that are acknowledged
-            for i, r := range(requests) {
+            for i := 0; i < len(requests); i++ {
+                r := requests[i]
                 found := false
                 safe_to_delete := false
                 for _, o := range(orders) {
@@ -432,6 +433,7 @@ func ClientLoop(c Channels, master network.ID) {
 
                 if safe_to_delete {
                     requests = append(requests[:i], requests[i+1:]...)
+                    i--
                 }
             }
 
@@ -455,9 +457,17 @@ func ClientLoop(c Channels, master network.ID) {
                 Data: EncodeClientData(data),
             }
 
-        // case button := <- c.button_pressed:
+        case button := <- c.button_pressed:
+            fmt.Println("[CLIENT]\tA button was pressed")
+            order := Order {
+                Button: button,
+                // Other values are null-initialized
+            }
+            requests = append(requests, order)
 
-        // case floor := <- c.floor_reached:
+        case floor := <- c.floor_reached:
+            last_passed_floor = floor
+
         // case stopped := <- c.stop_button:
         // case obstructed := <- c.obstruction:
         // case <- c.completed_floor:
