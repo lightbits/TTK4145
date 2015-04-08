@@ -1,0 +1,73 @@
+##############################################################################
+                        FSP EXAMPLES FROM LECTURES
+##############################################################################
+
+                            REUSABLE SEMAPHORE
+------------------------------------------------------------------------------
+
+SEM = (wait[1..2] -> signal[1..2] -> SEM).
+
+P1 = (s1.wait[1] -> s2.wait[1] -> s2.signal[1] -> s1.signal[1] -> P1).
+P2 = (s2.wait[2] -> s1.wait[2] -> s1.signal[2] -> s2.signal[2] -> P2).
+
+||SEMS = (s1:SEM || s2:SEM || P1 || P2).
+
+
+                        BOUNDED BUFFER WITH SEMAPHORE
+------------------------------------------------------------------------------
+
+SEM_IA = SEM_IA0,
+
+  SEM_IA0 = (ia_put -> SEM_IA1),
+  SEM_IA1 = (ia_put -> SEM_IA2
+          | ia_get -> SEM_IA0),
+  SEM_IA2 = (ia_put -> SEM_IA3
+          | ia_get -> SEM_IA1),
+  SEM_IA3 = (ia_put -> SEM_IA4
+          | ia_get -> SEM_IA2),
+  SEM_IA4 = (ia_put -> SEM_IA5
+          | ia_get -> SEM_IA3),
+  SEM_IA5 = (ia_get -> SEM_IA4).
+
+SEM_SA(N=5) = SEM_SA[N],
+  SEM_SA[0] = (sa_put -> SEM_SA[1]),
+  SEM_SA[i:1..N-1] = (sa_put -> SEM_SA[i+1]
+                 |  sa_get -> SEM_SA[i-1]),
+  SEM_SA[N] = (sa_get -> SEM_SA[N-1]).
+
+SEM_IA(N=5) = SEM_IA[0],
+  SEM_IA[0] = (ia_put -> SEM_IA[1]),
+  SEM_IA[i:1..N-1] = (ia_put -> SEM_IA[i+1]
+                 |  ia_get -> SEM_IA[i-1]),
+  SEM_IA[N] = (ia_get -> SEM_IA[N-1]).
+
+SEM_M = (t1_m_get -> t1_m_put -> SEM_M
+      |  t2_m_get -> t2_m_put -> SEM_M).
+
+T1 = (sa_get -> t1_m_get -> t1_m_put -> ia_put -> T1).
+T2 = (ia_get -> t2_m_get -> t2_m_put -> sa_put -> T2).
+
+||SYSTEM(N=3) = (T1 || T2 || SEM_M || SEM_SA(N) || SEM_IA(N) ).
+
+
+                            BOUNDED BUFFER
+------------------------------------------------------------------------------
+
+BUF(N=5) = BUF[N],
+
+  BUF[0] = (buf_put -> BUF[1]),
+
+  BUF[i:1..N-1] = (buf_put -> BUF[i+1]
+
+                 |  buf_get -> BUF[i-1]),
+
+  BUF[N] = (buf_get -> BUF[N-1]).
+
+BUF(N=5) = BUF[N],
+  BUF[i:0..N] = (when i<N buf_put -> BUF[i+1]
+              |  when i>0 buf_get -> BUF[i-1]).
+
+T1 = (buf_put -> T1).
+T2 = (buf_put -> T2).
+
+||SYSTEM(N=3) = (T1 || T2 || BUF(N) ).

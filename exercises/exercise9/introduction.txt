@@ -1,0 +1,267 @@
+http://www.doc.ic.ac.uk/~jnm/LTSdocumention/FSP-notation.html
+
+##########################################################################
+[1]                            The action prefix
+##########################################################################
+
+
+(a -> P) describes a process which engages in action a,
+and then goes on to behave as P.
+
+(EXAMPLE) A simple clock
+
+    CLOCK = (tick -> CLOCK).
+
+Actions (tick) must begin with lowercase.
+Processes (CLOCK) must begin with uppercase.
+A process definition is ended with a '.'.
+A more complex process definition is composited
+using ','.
+
+(EXAMPLE) A more complex clock
+
+    CLOCK = (tick -> TOCK),
+    TOCK  = (tock -> CLOCK).
+
+In this example, TOCK is a "local" process, and is
+therefore not globally referrable. We could write the
+same example as.
+
+(EXAMPLE) Same clock, but written more simply
+
+    CLOCK = (tick -> (tock -> CLOCK)).
+
+
+
+##########################################################################
+[2]                         Choices, choices, ...
+##########################################################################
+
+(a -> P | b -> Q) describes a process which engages in
+either action a or action b, and transitions to either
+P or Q respectively.
+
+
+(EXAMPLE) A non-deterministic model
+
+    COIN = (toss -> heads -> COIN | toss -> tails -> COIN)
+
+FSP does not distinguish deterministic/non-determinism.
+In the above example, the generated state diagram will
+have the toss action lead to both the (heads -> COIN)
+and the (tails -> COIN) process.
+
+
+(EXAMPLE) The state diagram for the above model
+
+          toss
+    +--------------+
+    | toss         |
+    +--->---+      |
+    |       |      |
+   (0)     (1)    (2)
+    |       |      |
+    +---<---+      |
+    | heads        |
+    +--------------+
+         tails
+
+(EXAMPLE) These are equivalent
+
+    DOOR = (open -> DOOR | close -> DOOR).
+    DOOR = ({open, close} -> DOOR).
+
+{open, close} is called an _ACTION_SET_.
+
+
+
+##########################################################################
+[3]                              Indexing
+##########################################################################
+
+(EXAMPLE) A simple one-element buffer
+
+    BUFFER       = EMPTY                    ,
+    EMPTY        = (push[x:0..2] -> FULL[x]),
+    FULL[x:0..2] = (pop[x]       -> EMPTY)  .
+
+Initially, the buffer does not hold any data.
+The actions push.0, push.1, push.2, referred to
+generally with the indexing, will store the value
+0, 1 or 2, respectively, in the buffer.
+
+A buffer filled with the value x can be emptied
+by the action pop.x. Note that buffer.x may only
+engage with action pop.x, and not any other pop.
+
+
+(EXAMPLE) An equivalent model of the buffer
+
+    BUFFER = (push[x:0..2] -> pop[x] -> BUFFER).
+
+
+(EXAMPLE) This is also the same
+
+    range T = 0..2
+    BUFFER = (push[x:T] -> pop -> BUFFER).
+
+
+(EXAMPLE) Double indexing illustrated by a one-bit adder
+
+    const N = 1
+    SUM = (in[x:0..N][y:0..N] -> out[x + y] -> SUM).
+
+
+(EXERCISE)
+    The above adder produces a non-minimal state-
+    diagram. Rewrite the definition of SUM to get
+    the minimal number of states.
+
+
+(SOLUTION)
+    We merge the processes corresponding to 0 + 1
+    and 1 + 0.
+
+    const N         = 1
+    SUM             = (in[x:0..N][y:0..N] -> TOTAL[x + y]),
+    TOTAL[s:0..2*N] = (out[s] -> SUM)
+
+
+##########################################################################
+[4]                            Conditionals
+##########################################################################
+
+A conditional takes the form
+    if expr then
+        (process A)
+    else
+        (process B)
+The else is optional.
+
+(EXAMPLE)
+    LEVEL = (read[x:0..3] ->
+             if x >= 2 then
+                (high -> LEVEL)
+             else
+                (low -> LEVEL)).
+
+
+A guard takes the form
+    (when B a -> P)
+which means that action a should only be considered when
+the guard B is true.
+
+(EXAMPLE) Bounded semaphore
+
+    const MAX = 4
+
+    SEM(Init=0)   = SEM[Init],
+    SEM[v:0..MAX] = ( when v < MAX   up -> SEM[v + 1]
+                    | when v > 0   down -> SEM[v - 1]
+                    ).
+
+
+##########################################################################
+[5]                              Parameters
+##########################################################################
+
+(EXAMPLE) A buffer that stores a value in the range 0..Max
+
+    BUFFER(Max = 3) = (push[x:0..Max] -> pop[x] -> BUFFER).
+
+Parameters must always begin with an uppercase.
+
+
+                                    ........
+
+                              Now for the fun stuff
+
+                                    ........
+
+
+##########################################################################
+[6]                          Parallell composition
+##########################################################################
+
+(P || Q) is the parallell composition of process P and Q.
+The resulting state diagram will contain all the possible
+interleavings of the actions of the two processes.
+
+Shared actions (actions which occur in both processes)
+limit the interleaving, since both processes must engage
+in the action at the same time.
+
+(EXAMPLE)
+
+    A = (a -> x -> A).
+    B = (b -> x -> B).
+
+    ||SYS = (A || B).
+
+The possible execution paths are
+
+    a > b > x > A
+    a > b > x > B
+    b > a > x > A
+    b > a > x > B
+
+But from SYS's point of view, A and B is the same process,
+so we simplify to
+
+    a > b > x > SYS
+    b > a > x > SYS
+
+If there were no shared action (like x), then there would
+be even more possible paths.
+
+A composite process (like SYS) must be prefixed with ||.
+Primitive processes (like A and B) cannot have compositions
+within them.
+
+
+(EXAMPLE) A shared garage
+
+    CAR(I=1) = (car[I].outside  -> car[I].enter ->
+                car[I].ingarage -> car[I].exit  -> CAR).
+
+    GARAGE(N=2) = (car[x:1..N].enter -> car[x].exit -> GARAGE).
+
+    ||SHARE = (CAR(1) || CAR(2) || GARAGE).
+
+
+The above example can be rewritten using process labelling.
+
+(EXAMPLE) An equivalent model of the shared garage
+
+    CAR         = (outside -> enter -> ingarage -> exit -> CAR).
+    GARAGE(N=2) = (car[x:1..N].enter -> car[x].exit -> GARAGE) .
+    ||SHARE     = (car[1]:CAR || car[2]:CAR || GARAGE)         .
+
+
+The expression car[1]:CAR prefixes all action labels within CAR
+with car[1]. Meaning car[1]:CAR is equivalent to the process
+
+    car[1].outside  ->
+    car[1].enter    ->
+    car[1].ingarage ->
+    car[1].exit     -> CAR
+
+
+We can combine this with ranges to generate multiple processes:
+
+    ||SHARE(N=3) = (car[1..N]:CAR || GARAGE)
+
+
+Processes can also be labelled with a set of labels, generating
+a process with each permutation of prefixed actions.
+(EXAMPLE) Set labelling
+
+    LOCK = (get -> rel -> LOCK)
+    SYS = ({p1, p2}::mutex:LOCK).
+
+
+    +-------p1.mutex.get------+
+    |       p2.mutex.get      |
+   (0)                       (1)
+    |       p2.mutex.rel      |
+    +-------p1.mutex.rel------+
