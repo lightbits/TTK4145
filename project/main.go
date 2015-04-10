@@ -102,14 +102,14 @@ func WaitForBackup(c Channels, initial_queue []Order) {
         select {
         case packet := <- c.from_client:
             // DEBUG:
-            MasterLoop(c, packet.Address)
+            // MasterLoop(c, packet.Address)
 
-            // if packet.Address != machine_id {
-            //     MasterLoop(c, packet.Address)
-            //     return
-            // } else {
-            //     fmt.Println("[MASTER]\tCannot use own machine as backup client")
-            // }
+            if packet.Address != machine_id {
+                MasterLoop(c, packet.Address, initial_queue)
+                return
+            } else {
+                fmt.Println("[MASTER]\tCannot use own machine as backup client")
+            }
         }
     }
 }
@@ -126,14 +126,14 @@ func DistanceSqrd(a, b int) int {
 }
 
 func ClosestActiveLift(clients map[network.ID]Client, floor int) network.ID {
-    closest_df := -1
+    closest_df := 100
     closest_id := network.InvalidID
     for id, client := range(clients) {
         if client.HasTimedOut {
             continue
         }
         df := DistanceSqrd(client.LastPassedFloor, floor)
-        if closest_df == -1 || df < closest_df {
+        if df < closest_df {
             closest_df = df
             closest_id = id
         }
@@ -253,14 +253,14 @@ func IsSameOrder(a, b Order) bool {
            a.Button.Type  == b.Button.Type
 }
 
-func MasterLoop(c Channels, backup network.ID) {
+func MasterLoop(c Channels, backup network.ID, initial_queue []Order) {
     TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL    := 250 * time.Millisecond
 
     time_to_send     := time.NewTicker(SEND_INTERVAL)
     client_timed_out := make(chan network.ID)
 
-    orders  := make([]Order, 0)
+    orders  := initial_queue
     clients := make(map[network.ID]Client)
 
     fmt.Println("[MASTER]\tStarting master with backup", backup)
@@ -396,7 +396,7 @@ func ClientLoop(c Channels, master network.ID) {
         case <- master_timeout.C:
             if is_backup {
                 fmt.Println("[CLIENT]\tMaster timed out; taking over!")
-                WaitForBackup(c, orders)
+                go WaitForBackup(c, orders)
             }
 
         case <- time_to_send.C:
@@ -445,7 +445,9 @@ func ClientLoop(c Channels, master network.ID) {
 
             orders = data.Orders
             for _, o := range(orders) {
-                driver.SetButtonLamp(o.Button, true)
+                if !(o.Button.Type == driver.ButtonOut && o.TakenBy != our_id) {
+                    driver.SetButtonLamp(o.Button, true)
+                }
                 if o.TakenBy == our_id && o.Priority {
                     is_done := false
                     for _, r := range(requests) {
@@ -584,7 +586,8 @@ func main() {
     // TestDriver(channels)
 
     if start_as_master {
-        go WaitForBackup(channels, nil)
+        initial_queue := make([]Order, 0)
+        go WaitForBackup(channels, initial_queue)
     }
 
     go network.ClientWorker(channels.from_master, channels.to_master)
