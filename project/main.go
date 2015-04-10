@@ -6,7 +6,7 @@ import (
     "fmt"
     "flag"
     "encoding/json"
-    // "./lift"
+    "./lift"
     "./network"
     "./driver"
     // "./fakedriver"
@@ -24,6 +24,8 @@ type Client struct {
     LastPassedFloor int
     Timer           *time.Timer
     HasTimedOut     bool
+    // TODO: Add timer which fires off if the client has been on the same
+    // floor for a long time, when it has a floor to go to.
 }
 
 type ClientData struct {
@@ -37,12 +39,18 @@ type MasterData struct {
 }
 
 type Channels struct {
-    completed_floor chan bool
-    reached_target  chan bool
+    // Lift events
+    last_passed_floor_changed chan int
+    target_floor_changed      chan int
+    completed_floor           chan int
+
+    // Driver events
     button_pressed  chan driver.OrderButton
     floor_reached   chan int
     stop_button     chan bool
     obstruction     chan bool
+
+    // Network events
     to_master       chan network.Packet
     to_clients      chan network.Packet
     from_master     chan network.Packet
@@ -52,6 +60,14 @@ type Channels struct {
 func DecodeMasterPacket(b []byte) (MasterData, error) {
     var result MasterData
     err := json.Unmarshal(b, &result)
+    if err == nil {
+        for _, o := range(result.Orders) {
+            if o.TakenBy == network.InvalidID {
+                log.Fatal("[CLIENT]\tA non-taken order was received")
+            }
+        }
+    }
+
     return result, err
 }
 
@@ -238,8 +254,8 @@ func IsSameOrder(a, b Order) bool {
 }
 
 func MasterLoop(c Channels, backup network.ID) {
-    SEND_INTERVAL    := 2 * time.Second
     TIMEOUT_INTERVAL := 5 * time.Second
+    SEND_INTERVAL    := 250 * time.Millisecond
 
     time_to_send     := time.NewTicker(SEND_INTERVAL)
     client_timed_out := make(chan network.ID)
@@ -259,6 +275,7 @@ func MasterLoop(c Channels, backup network.ID) {
             }
 
             // Add client if new, and update information
+            // TODO: Seperate this into a different module? Network module?
             sender_id := packet.Address
             client, exists := clients[sender_id]
             if exists {
@@ -302,9 +319,10 @@ func MasterLoop(c Channels, backup network.ID) {
             }
 
             // Delete finished jobs
-            for i, o := range(orders) {
-                if o.Done {
+            for i := 0; i < len(orders); i++ {
+                if orders[i].Done {
                     orders = append(orders[:i], orders[i+1:]...)
+                    i--
                 }
             }
 
@@ -360,7 +378,7 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
 
 func ClientLoop(c Channels, master network.ID) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
-    SEND_INTERVAL := 2 * time.Second
+    SEND_INTERVAL := 250 * time.Millisecond
 
     master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
     time_to_send := time.NewTicker(SEND_INTERVAL)
@@ -370,12 +388,44 @@ func ClientLoop(c Channels, master network.ID) {
 
     our_id := network.GetMachineID()
     last_passed_floor := 0
-    target_floor := 0
     is_backup := false
 
     fmt.Println("[CLIENT]\tStarting client")
     for {
         select {
+        case <- master_timeout.C:
+            if is_backup {
+                fmt.Println("[CLIENT]\tMaster timed out; taking over!")
+                WaitForBackup(c, orders)
+            }
+
+        case <- time_to_send.C:
+            data := ClientData {
+                LastPassedFloor: last_passed_floor,
+                Requests:        requests,
+            }
+            c.to_master <- network.Packet {
+                Data: EncodeClientData(data),
+            }
+
+        case button := <- c.button_pressed:
+            fmt.Println("[CLIENT]\tA button was pressed")
+            order := Order {
+                Button: button,
+            }
+            requests = append(requests, order)
+
+        case floor := <- c.last_passed_floor_changed:
+            last_passed_floor = floor
+
+        case floor := <- c.completed_floor:
+            for _, o := range(orders) {
+                if o.TakenBy == our_id && o.Button.Floor == floor {
+                    o.Done = true
+                    requests = append(requests, o)
+                }
+            }
+
         case packet := <- c.from_master:
             fmt.Println("[CLIENT]\tMaster said", string(packet.Data))
             master_timeout.Reset(MASTER_TIMEOUT_INTERVAL)
@@ -395,15 +445,17 @@ func ClientLoop(c Channels, master network.ID) {
 
             orders = data.Orders
             for _, o := range(orders) {
-
-                if o.TakenBy == network.InvalidID {
-                    log.Fatal("[CLIENT]\tA non-taken order was received")
-                }
-
                 driver.SetButtonLamp(o.Button, true)
-
                 if o.TakenBy == our_id && o.Priority {
-                    target_floor = o.Button.Floor
+                    is_done := false
+                    for _, r := range(requests) {
+                        if IsSameOrder(o, r) && r.Done {
+                            is_done = true
+                        }
+                    }
+                    if !is_done {
+                        c.target_floor_changed <- o.Button.Floor
+                    }
                     fmt.Println("[CLIENT]\tTarget floor:", o.Button.Floor)
                 }
             }
@@ -442,35 +494,6 @@ func ClientLoop(c Channels, master network.ID) {
                     i--
                 }
             }
-
-        case <- master_timeout.C:
-            if is_backup {
-                fmt.Println("[CLIENT]\tMaster timed out; taking over!")
-                WaitForBackup(c, orders)
-            }
-
-        case <- time_to_send.C:
-            data := ClientData {
-                LastPassedFloor: last_passed_floor,
-                Requests:        requests,
-            }
-            c.to_master <- network.Packet {
-                Data: EncodeClientData(data),
-            }
-
-        case button := <- c.button_pressed:
-            fmt.Println("[CLIENT]\tA button was pressed")
-            order := Order {
-                Button: button,
-            }
-            requests = append(requests, order)
-
-        case floor := <- c.floor_reached:
-
-            if floor == target_floor {
-                c.reached_target <- true
-            }
-            last_passed_floor = floor
         }
     }
 }
@@ -524,12 +547,19 @@ func main() {
     flag.Parse()
 
     var channels Channels
-    channels.completed_floor = make(chan bool)
-    channels.reached_target  = make(chan bool)
+
+    // Lift events
+    channels.last_passed_floor_changed = make(chan int)
+    channels.target_floor_changed      = make(chan int)
+    channels.completed_floor           = make(chan int)
+
+    // Driver events
     channels.button_pressed  = make(chan driver.OrderButton)
     channels.floor_reached   = make(chan int)
     channels.stop_button     = make(chan bool)
     channels.obstruction     = make(chan bool)
+
+    // Network events
     channels.to_master       = make(chan network.Packet)
     channels.to_clients      = make(chan network.Packet)
     channels.from_master     = make(chan network.Packet)
@@ -543,11 +573,13 @@ func main() {
         channels.stop_button,
         channels.obstruction)
 
-    // go lift.Init(
-    //     channels.completed_floor,
-    //     channels.reached_target,
-    //     channels.stop_button,
-    //     channels.obstruction)
+    go lift.Init(
+        channels.floor_reached,
+        channels.last_passed_floor_changed,
+        channels.target_floor_changed,
+        channels.completed_floor,
+        channels.stop_button,
+        channels.obstruction)
 
     // TestDriver(channels)
 
