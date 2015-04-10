@@ -6,10 +6,10 @@ import (
     "fmt"
     "flag"
     "encoding/json"
-    "./lift"
+    // "./lift"
     "./network"
-    // "./driver"
-    "./fakedriver"
+    "./driver"
+    // "./fakedriver"
 )
 
 type Order struct {
@@ -282,10 +282,11 @@ func MasterLoop(c Channels, backup network.ID) {
             for _, r := range(requests) {
 
                 is_new_order := true
-                for _, o := range(orders) {
+                for i, o := range(orders) {
                     if IsSameOrder(o, r) {
                         if r.Done {
                             o.Done = true
+                            orders[i] = o
                         }
                         is_new_order = false
                     }
@@ -345,7 +346,10 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
             c.to_master <- network.Packet {
                 Data: []byte("Ping"),
             }
-        case <- c.button_pressed:
+        case button := <- c.button_pressed:
+            if button.Type == driver.ButtonOut {
+                // TODO: Add to order list
+            }
         case <- c.floor_reached:
         case <- c.stop_button: // ignore
         case <- c.obstruction: // ignore
@@ -361,11 +365,12 @@ func ClientLoop(c Channels, master network.ID) {
     master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
     time_to_send := time.NewTicker(SEND_INTERVAL)
 
-    orders      := make([]Order, 0) // Local copy of master's queue
-    requests    := make([]Order, 0) // Unacknowledged local events
+    orders := make([]Order, 0) // Local copy of master's queue
+    requests := make([]Order, 0) // Unacknowledged local events
 
     our_id := network.GetMachineID()
     last_passed_floor := 0
+    target_floor := 0
     is_backup := false
 
     fmt.Println("[CLIENT]\tStarting client")
@@ -395,9 +400,10 @@ func ClientLoop(c Channels, master network.ID) {
                     log.Fatal("[CLIENT]\tA non-taken order was received")
                 }
 
-                // driver.SetButtonLamp(o.Button, true)
+                driver.SetButtonLamp(o.Button, true)
 
                 if o.TakenBy == our_id && o.Priority {
+                    target_floor = o.Button.Floor
                     fmt.Println("[CLIENT]\tTarget floor:", o.Button.Floor)
                 }
             }
@@ -440,11 +446,6 @@ func ClientLoop(c Channels, master network.ID) {
         case <- master_timeout.C:
             if is_backup {
                 fmt.Println("[CLIENT]\tMaster timed out; taking over!")
-                // Note that if there were any unacknowledged new orders
-                // or finished orders in requests, they will be left out.
-                // If they were new orders, it is ok since we have yet to
-                // give user feedback. If they were completed orders...
-                // maybe ok?
                 WaitForBackup(c, orders)
             }
 
@@ -461,16 +462,15 @@ func ClientLoop(c Channels, master network.ID) {
             fmt.Println("[CLIENT]\tA button was pressed")
             order := Order {
                 Button: button,
-                // Other values are null-initialized
             }
             requests = append(requests, order)
 
         case floor := <- c.floor_reached:
-            last_passed_floor = floor
 
-        // case stopped := <- c.stop_button:
-        // case obstructed := <- c.obstruction:
-        // case <- c.completed_floor:
+            if floor == target_floor {
+                c.reached_target <- true
+            }
+            last_passed_floor = floor
         }
     }
 }
@@ -510,6 +510,7 @@ func TestDriver(channels Channels) {
         case <- channels.floor_reached:
             fmt.Println("[TEST]\tFloor reached")
         case <- channels.stop_button:
+            driver.ClearAllButtonLamps()
             fmt.Println("[TEST]\tStop button pressed")
         case <- channels.obstruction:
             fmt.Println("[TEST]\tObstruction changed")
@@ -542,9 +543,11 @@ func main() {
         channels.stop_button,
         channels.obstruction)
 
-    go lift.Init(
-        channels.completed_floor,
-        channels.reached_target)
+    // go lift.Init(
+    //     channels.completed_floor,
+    //     channels.reached_target,
+    //     channels.stop_button,
+    //     channels.obstruction)
 
     // TestDriver(channels)
 

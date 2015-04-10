@@ -101,8 +101,12 @@ func SetButtonLamp(btn OrderButton, set bool) {
 
 func ClearAllButtonLamps() {
     for f := 0; f < N_FLOORS; f++ {
-        SetButtonLamp(OrderButton{f, ButtonUp},   false)
-        SetButtonLamp(OrderButton{f, ButtonDown}, false)
+        if f < N_FLOORS - 1 {
+            SetButtonLamp(OrderButton{f, ButtonUp},   false)
+        }
+        if f > 0 {
+            SetButtonLamp(OrderButton{f, ButtonDown}, false)
+        }
         SetButtonLamp(OrderButton{f, ButtonOut},  false)
     }
 }
@@ -113,6 +117,14 @@ func SetDoorOpenLamp(on bool) {
     } else {
         io_clear_bit(LIGHT_DOOR_OPEN);
     }
+}
+
+func OpenDoor() {
+    SetDoorOpenLamp(true)
+}
+
+func CloseDoor() {
+    SetDoorOpenLamp(false)
 }
 
 func SetStopLamp(on bool) {
