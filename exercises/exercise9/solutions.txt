@@ -1,0 +1,112 @@
+[4] SAFETY/DEADLOCK
+━━━━━━━━━━━━━━━━━━━
+Create a system with a deadlock. Does LTSA detect it?
+
+SOLUTION
+────────
+                    ╭─────────────────────╮
+                    │A     = (x → y → A). │
+                    │B     = (y → x → B). │
+                    │||SYS = (A || B).    │
+                    ╰─────────────────────╯
+
+Has a deadlock, since x cannot occur without y having occurred,
+and y cannot occur without x having occurred.
+
+This is visible from the FSP model, since x and y are shared actions.
+A shared action must occur simultaneously in all processes that listen
+to it.
+
+
+[5] PROGRESS/LIVELOCK
+━━━━━━━━━━━━━━━━━━━━━
+Create a system with a livelock, in other words, a system
+where there is a subset of states that there is no way to
+get out from. How is this detected by LTSA?
+
+SOLUTION
+────────
+                  ╭─────────────────────────╮
+                  │ A     = (x → A | y → B).│
+                  │ B     = (z → B).        │
+                  │ ||SYS = (A || B).       │
+                  ╰─────────────────────────╯
+
+The corresponding diagram shows that after transitioning to
+B, there is no way to get back to A, and execute the action
+x.
+                          x         z
+                        ╭───╮     ╭───╮
+                        │   │  y  │   │
+                        ╰──→A────→B←──╯
+
+Q: Assume that the subset is not a livelock, but normal
+behaviour. Create a progress property that contains only
+those states that are part of the livelock to get rid of
+the error.
+
+SOLUTION
+────────
+A liveness (progress) property asserts that something good
+eventually happens.
+
+    progress ZHappens = {z}
+
+
+[6] DINING PHILOSOPHERS
+━━━━━━━━━━━━━━━━━━━━━━━
+Model a system with 3 philosophers and 3 forks and demonstrate
+a deadlock.
+
+                              P₀
+                            F₂  F₀
+                          P₂  F₁  P₁
+
+                  Figure: Three philosophers and
+                          three forks.
+
+SOLUTION
+────────
+Let's have all the philosophers pick up their right fork first,
+followed by the left fork. Straightforward FSP:
+
+    F0 = (pick[0] -> put[0] -> F0).
+    F1 = (pick[1] -> put[1] -> F1).
+    F2 = (pick[2] -> put[2] -> F2).
+    P0 = (pick[2] -> pick[0] -> put[0] -> put[2] -> P0).
+    P1 = (pick[0] -> pick[1] -> put[1] -> put[0] -> P1).
+    P2 = (pick[1] -> pick[2] -> put[2] -> put[1] -> P2).
+    ||TABLE = (F0 || F1 || F2 || P0 || P1 || P2).
+
+This has a deadlock where each philosopher picks up the same-side
+fork. I.e. if each philosopher picks up their right-hand fork,
+which can be done simultaneously without collision, then the
+system will be left in a deadlock.
+
+Q: Extend the FSM description to handle N philosophers.
+
+SOLUTION
+────────
+    const N = 2
+    F[i:0..N] = (pick[i] -> put[i] -> FORKS[i]).
+    P[0]      = (pick[N] -> pick[0] -> put[0] -> put[N] -> P[0]).
+    P[i:1..N] = (pick[i-1] -> pick[i] -> put[i] -> put[i-1] -> P[i]).
+    ||TABLE = (F || P).
+
+Q: Get rid of the deadlock by making one of the philosophers
+left-handed.
+
+SOLUTION
+────────
+    const N = 2
+    F[i:0..N] = (pick[i] -> put[i] -> FORKS[i]).
+    P[0]      = (pick[0] -> pick[N] -> put[N] -> put[0] -> P[0]).
+    P[i:1..N] = (pick[i-1] -> pick[i] -> put[i] -> put[i-1] -> P[i]).
+    ||TABLE = (F || P).
+
+This solves the deadlock, since the last philosopher cannot
+pick up their right-hand fork if it is taken already.
+
+This has implications for fairness, since the last philosopher
+must pick up their right-hand fork before attempting to pick up
+their left-hand fork. ???
