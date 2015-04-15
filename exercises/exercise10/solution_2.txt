@@ -1,0 +1,113 @@
+
+OPPGAVESETT 2:
+
+    Task │ Period │ Execution time
+       A │ 50     │ 15
+       B │ 30     │ 10
+       C │ 20     │ 5
+
+For example, task A takes 15 time units to complete,
+and must complete within 50 time units to meet the
+deadline.
+
+──────────────────────────────────────────────────
+Show how the task set executes with rate monotonic
+priority assignment
+──────────────────────────────────────────────────
+
+Med RMPA så fordeles statiske prioriteter basert
+på oppgavers periode. Lavere periode, dvs. snarere
+frist, betyr høyere prioritet.
+
+Det kan vises at RMPA er optimal, i den forstand at
+hvis det finnes en statisk fordelingsalgoritme som
+kan tilfredsstille alle deadlines, så vil RMPA det
+også.
+
+I oppgavesettet over så fordeles C høyeste prioritet,
+mens A fordeles lavest prioritet.
+
+_: Kjører ikke
+▄: Kjører
+
+              111111111122222222223
+    0123456789012345678901234567890
+  ┌────────────────────────────────
+A │ ________________▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+B │ ______▄▄▄▄▄▄▄▄▄▄_______________
+C │ ▄▄▄▄▄▄_________________________
+
+
+──────────────────────────────────────────────────
+Perform the utilization test on the task set. Is
+the task set schedulable?
+──────────────────────────────────────────────────
+
+Utilization testen for rate-monotonic fordeling
+
+    U = ∑ Cᵢ / Pᵢ ≤ n(2^(1/n) - 1),
+
+    der Cᵢ er verste-tilfelle eksekveringstid for
+    oppgave i, og Pᵢ er dens periode/deadline,
+
+gir tilstrekkelige betingelser for at alle
+oppgavene vil kunne schedules til å
+tilfredsstille deres frister.
+
+(Merk at testen ser annerledes ut ved bruk av
+en anna fordelingsalgoritme, f.eks. EDF).
+
+I dette eksempelet er
+    U = (5/20) + (10/30) + (15/50) = 0.89
+           A        B         C
+
+mens
+    n(2^(1/n) - 1) = 3(2^1/3 - 1) = 0.78
+
+Testen gir kun _tilstrekkelige_ betingelser, ikke
+nødvendige. Det kan fremdeles være tilfellet at
+settet er schedulable.
+
+Det har vi faktisk bevist i forrige oppgave, der
+rate-monotonic priority assignment gav en fordeling
+hvor alle oppgavene tilfredsstilte sine frister.
+
+
+──────────────────────────────────────────────────
+Utfør en responstid analyse. Er oppgavesettet
+schedulable? Hvis denne testen er uenig med
+resultatet fra b), forklar hvorfor.
+──────────────────────────────────────────────────
+
+Responstid testen
+
+    Rᵢⁿ⁺¹ = Cᵢ + ∑( ceil[Rᵢⁿ / Pᵤ] Cᵤ)
+
+    der summen er tatt over alle oppgaver u med
+    høyere prioritet (dvs. kortere periode) enn i.
+
+går ut på å beregne en oppgaves verste-tilfelle
+responstid R. Hvis R er <= fristen til oppgava,
+så tilfredsstiller oppgava fristen sin.
+
+Testen gir nødvendige og tilstrekkelige krav for
+schedulability, dvs. for at oppgavesettet vil
+tilfredsstille alle frister.
+
+I dette eksempelet har vi
+
+    RA = 15
+
+    RA = 15 + (ceil(RA/PB)CB) + (ceil(RA/PC)CC)
+       = 15 + ceil(15/30)10 + ceil(15/20)5
+       = 30
+
+    ... etc
+
+    RA = 50
+
+    RB = 15
+    RC = 5
+
+Altså tilfredsstiller hver oppgave sin frist, og
+settet er schedulable.

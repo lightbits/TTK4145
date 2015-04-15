@@ -1,0 +1,180 @@
+
+Task  Release time  Execution
+H     4             EQVE
+M     2             EVVE
+L     0             EQQQE
+
+E: Running
+Q: Running with resource Q locked
+V: Running with resource V locked
+
+──────────────────────────────────────────────────
+Vis hvordan oppgavesettet kjører uten priority
+inheritance
+──────────────────────────────────────────────────
+
+       0 1 2 3 4 5 6 7 8
+      ┌─────────────────
+    H │        E
+    M │    E V ^
+    L │E Q ^
+
+Task H will be blocked at this point, since resource Q is already locked by task L.
+
+       0 1 2 3 4 5 6 7 8 9 10 11 12
+      ┌────────────────────────────
+    H │        E           Q  V  E
+    M │    E V ^ V E
+    L │E Q ^         Q Q E
+
+Does task H automatically pre-empt task L as soon as Q is released? Or does task H begin running after L finishes?
+
+
+──────────────────────────────────────────────────
+Vis hvordan oppgavesettet kjører med priority
+inheritance
+──────────────────────────────────────────────────
+
+When task H pre-empts L, but finds that it is blocked by L holding resource Q, L's priority will temporarily be set to H's priority.
+
+       0 1 2 3 4 5 6 7 8 9 10 11 12
+      ┌────────────────────────────
+    H │        E       Q V E
+    M │    E V ^       ^      V  E
+    L │E Q ^     Q Q E
+
+
+──────────────────────────────────────────────────
+    Vis hvordan oppgavesettet kjører med ICPP
+      (Immediate Ceiling Priority Protocol)
+──────────────────────────────────────────────────
+
+Priority ceiling of R C(R):
+  max {Priority(i) : Task i uses R when running}
+
+Regel: Når en oppgave T holder låsen til R,
+       så økes Ts prioritet til C(R) midlertidig
+
+Hvorfor: Siden en høyere prioritet oppgave kan
+       ønske R, så må T bli ferdig fort. Dvs. T
+       er minst like viktig.
+
+                 111
+       0123456789012
+      ┌─────────────
+    H │    .EQVE
+    M │  .......EVVE
+    L │EQQQE
+
+Når L låste Q, så ble Ls prioritet satt til Hs
+prioritet. Dermed kunne ikke L preemptes av M
+eller H når de ble løslatt.
+
+──────────────────────────────────────────────────
+    Forklar hvorfor ICPP unngår deadlocks
+──────────────────────────────────────────────────
+
+En deadlock er når A låser X og preemptes av B
+som låser Y, og A trenger Y for å fortsette, mens
+B trenger X for å fortsette.
+
+    A: EYXE
+    B: EXYE
+
+    A   EY...
+    B EX.....
+
+B kan kun avbrytes av A hvis A har høyere (dynamisk)
+prioritet når den løslates.
+
+Men med ICPP, så vil B arve prioriteten til A når
+den låser X, siden A bruker X i sin kjøretid. Dermed
+kan _ikke_ A avbryte B når den løslates, og B vil
+kjøre ut sin eksekvering før A begynner:
+
+    A   ..EYXE
+    B EXYE
+
+──────────────────────────────────────────────────
+    Vis hvordan oppgavesettet kjører med OCPP
+       (Original Ceiling Priority Protocol)
+──────────────────────────────────────────────────
+
+Regel:
+    T får lov til å låse M (bare) hvis
+      - M ikke er låst av noen andre, og
+
+      - Prioriteten til T er høyere enn alle
+        prioritet-tak til alle ressurser brukt av
+        andre oppgaver på dette tidspunktet (disse
+        oppgavene _blokkerer_ T)
+
+    Når oppgave blokkerer en annen, så arver den
+    den høyeste av deres prioriteter.
+
+Hvorfor:
+    Å øke en blokkerende oppgaves prioritet er en
+    form for priority inversion, som vi vil unngå
+    så mye som mulig?
+
+H     4             EQVE
+M     2             EVVE
+L     0             EQQQE
+
+                 111
+       0123456789012
+      ┌─────────────
+    H │    E..QVE
+    M │  E.......VVE
+    L │EQ.Q.QE
+
+
+    1: L låser Q, siden Q ikke er låst av noen andre,
+       og ingen andre har noen låser.
+    2: M forstyrrer oppgave L, fordi M har høyere pri
+       enn L.
+    3: M forsøker å låse V, men prioritetstaket til Q
+       er PH, som er større enn PM. Altså får ikke M
+       låst V, og L fortsetter å kjøre. I tillegg blir
+       PL økt til max(PL, PM) = PM, siden L blokkerer
+       M, per definisjon over.
+
+    4: H forstyrrer oppgave L, siden PH > PL (som nå
+       er = PM).
+
+    5: H forsøker å låse Q, men Q er i bruk av L, og
+       PH er ikke > C(Q). Nå blokkerer L H, og arver
+       prioriteten PH.
+
+    7: PH > PM, så H gjenopptas.
+    8: H låser V, siden V ikke er i bruk OG ingen
+       andre ressurser er i bruk av andre oppgaver.
+
+    10: M gjenopptas.
+
+
+──────────────────────────────────────────────────
+       Forklar hvorfor OCPP unngår deadlocks
+──────────────────────────────────────────────────
+
+Samme eksempel igjen:
+
+    A: EYXE
+    B: EXYE
+
+    A   EY...
+    B EX.....
+
+Her er prioritetstakene C(X) = X(Y) = PA.
+Med OCPP så får ikke A lov til å låse Y, siden X
+er i bruk av B og C(X) > PA. Da vil B blokkere A,
+og arve prioriteten, og fortsette å kjøre.
+
+    A   E..YXE
+    B EX.YE
+
+──────────────────────────────────────────────────
+OCPP: A task X's priority is raised when a higher-
+priority task Y tries to acquire a resource that X
+has locked. X's priority is then raised to the pr-
+iority ceiling of the resource.
