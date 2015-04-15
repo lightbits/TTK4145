@@ -178,3 +178,15 @@ OCPP: A task X's priority is raised when a higher-
 priority task Y tries to acquire a resource that X
 has locked. X's priority is then raised to the pr-
 iority ceiling of the resource.
+
+──────────────────────────────────────────────────
+                    Ressurser
+──────────────────────────────────────────────────
+
+* http://www.cs.fsu.edu/~baker/realtime/restricted/notes/priolocking.html
+* http://en.wikipedia.org/wiki/Preemption_%28computing%29
+* http://rtsys.informatik.uni-kiel.de/teaching/10ss/v-emb-rt/lectures/lecture13-handout4.pdf
+* http://en.wikipedia.org/wiki/Earliest_deadline_first_scheduling
+* http://verifun.eecs.berkeley.edu/autogen/SchedulingDemo/schedule.php
+* http://en.wikipedia.org/wiki/Rate-monotonic_scheduling
+* http://www.embedded.com/electronics-blogs/beginner-s-corner/4023927/Introduction-to-Rate-Monotonic-Scheduling

@@ -17,6 +17,13 @@ type OrderButton struct {
     Type  ButtonType
 }
 
+type Events struct {
+    button_pressed  chan OrderButton
+    floor_reached   chan int
+    stop_button     chan bool
+    obstruction     chan bool
+}
+
 func MotorUp() {
     fmt.Println("[DRVR]\tMotor up")
 }
