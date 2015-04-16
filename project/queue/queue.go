@@ -99,6 +99,7 @@ lift might not have a target floor. But this is OK, since
 we interpret this as the lift being idle.
 */
 func DistributeWork(clients map[network.ID]Client, orders []Order) {
+
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
            (o.TakenBy == network.InvalidID ||

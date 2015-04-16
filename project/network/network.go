@@ -15,6 +15,7 @@ type packet struct {
 }
 
 type ClientData struct {
+    Address         ID
     LastPassedFloor int
     Requests        []Order
 }
@@ -34,16 +35,9 @@ type MasterEvents struct {
     from_client      chan network.Packet
 }
 
-// Might want to configure this at startup...
 var client_port int = 10012
 var master_port int = 20012
 
-// TODO: Should we also include the port number?
-// If so, return ID(sender.String()).
-// It is needed to differentiate an ID from
-// a machine that is both running a master instance
-// and a client instance, but we currently don't
-// need that.
 func getSenderID(sender *net.UDPAddr) ID {
     return ID(sender.IP.String())
 }
