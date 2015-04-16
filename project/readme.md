@@ -1,6 +1,8 @@
 Todo
 ----
 
+* Hide some implementation details? For example in driver, only expose methods that work on the Order struct, etc.
+
 * Design issues
     - How do we handle case when backup loses connection to primary,
     but other clients remain connected to primary (which gives two primaries)?

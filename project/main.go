@@ -8,8 +8,8 @@ import (
     "encoding/json"
     "./lift"
     "./network"
-    "./driver"
-    // "./fakedriver"
+    // "./driver"
+    "./fakedriver"
 )
 
 type Order struct {
@@ -376,6 +376,46 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
     }
 }
 
+func RemoveAcknowledgedRequests(requests, orders []Order) []Order {
+    for i := 0; i < len(requests); i++ {
+        r := requests[i]
+        master_has_it := false
+        acknowledged := false
+        for _, o := range(orders) {
+            if IsSameOrder(r, o) && r.Done == o.Done {
+                master_has_it = true
+                acknowledged = true
+            }
+        }
+        if !master_has_it && r.Done {
+            acknowledged = true
+        }
+        if acknowledged {
+            requests = append(requests[:i], requests[i+1:]...)
+            i--
+        }
+    }
+    return requests
+}
+
+func TestRemoveAcknowledgedRequests() bool {
+    order := Order {
+        Button: driver.OrderButton {
+            Floor: 5,
+            Type: driver.ButtonUp,
+        },
+    }
+    orders := make([]Order, 0)
+    orders = append(orders, order)
+    order.Done = false
+    order.Button.Floor = 6
+    requests := make([]Order, 0)
+    requests = append(requests, order)
+    requests = RemoveAcknowledgedRequests(requests, orders)
+    fmt.Println(requests)
+    return len(requests) == 0
+}
+
 func ClientLoop(c Channels, master network.ID) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL := 250 * time.Millisecond
@@ -462,40 +502,7 @@ func ClientLoop(c Channels, master network.ID) {
                 }
             }
 
-            // Clear requests that are acknowledged
-            for i := 0; i < len(requests); i++ {
-                r := requests[i]
-                found := false
-                safe_to_delete := false
-                for _, o := range(orders) {
-                    if IsSameOrder(r, o) {
-                        found = true
-                        if r.Done && !o.Done {
-                            // We have finished the order, but are waiting
-                            // for the master to acknowledge that
-                        } else if r.Done && o.Done {
-                            // This shouldn't happen?
-                        } else if !r.Done && o.Done {
-                            // This shouldn't happen either?
-                        } else if !r.Done && !o.Done {
-                            // Aha! Now it is safe to remove it from
-                            // out requests, as the master has acked it.
-                            safe_to_delete = true
-                        }
-                    }
-                }
-                if !found && r.Done {
-                    // This means the master has acknowledged that the
-                    // order was finished, and it is safe to delete
-                    // the request.
-                    safe_to_delete = true
-                }
-
-                if safe_to_delete {
-                    requests = append(requests[:i], requests[i+1:]...)
-                    i--
-                }
-            }
+            RemoveAcknowledgedRequests(requests, orders)
         }
     }
 }
@@ -585,11 +592,13 @@ func main() {
 
     // TestDriver(channels)
 
-    if start_as_master {
-        initial_queue := make([]Order, 0)
-        go WaitForBackup(channels, initial_queue)
-    }
+    fmt.Println(TestRemoveAcknowledgedRequests())
 
-    go network.ClientWorker(channels.from_master, channels.to_master)
-    WaitForMaster(channels, nil)
+    // if start_as_master {
+    //     initial_queue := make([]Order, 0)
+    //     go WaitForBackup(channels, initial_queue)
+    // }
+
+    // go network.ClientWorker(channels.from_master, channels.to_master)
+    // WaitForMaster(channels, nil)
 }

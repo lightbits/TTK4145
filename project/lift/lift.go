@@ -3,7 +3,8 @@ package lift
 import (
     "time"
     "log"
-    "../driver"
+    // "../driver"
+    "../fakedriver"
     "fmt"
 )
 
