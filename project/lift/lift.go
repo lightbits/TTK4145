@@ -3,19 +3,19 @@ package lift
 import (
     "time"
     "log"
-    "fmt"
     "../driver"
+    "fmt"
 )
 
-type Events struct {
-    last_passed_floor_changed chan int
-    target_floor_changed      chan int
-    completed_floor           chan int
-}
-
+// TODO: Stop button event, obstruction event. Belong here
+// or in event manager?
 func Init(
-    lift_events Events
-    io_events   driver.Events) {
+    floor_reached             chan int,
+    last_passed_floor_changed chan int,
+    target_floor_changed      chan int,
+    completed_floor           chan int,
+    stop_button               chan bool,
+    obstruction               chan bool) {
 
     door_timer := time.NewTimer(3 * time.Second)
     door_timer.Stop()

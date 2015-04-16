@@ -40,14 +40,4 @@ Assumptions
 
 **No multiple simultaneous errors**
 
-For example, consider the scenario where a client sends request A.
-The server acknowledges this by sending A in the next update. The
-client gets this, and sets the button lamp. At this point it is
-critical that A is not lost.
-
-However, it could be the case that the master died right after it
-sent the update AND the update did NOT reach the backup for some
-reason. But that would be two simultaneous errors, which we assume
-is very unlikely.
-
 **No network partitioning**

@@ -9,35 +9,21 @@ import (
 type ID string
 const InvalidID ID = ""
 
-type packet struct {
+type Packet struct {
     Address ID
     Data    []byte
 }
 
-type ClientData struct {
-    Address         ID
-    LastPassedFloor int
-    Requests        []Order
-}
-
-type MasterData struct {
-    AssignedBackup network.ID
-    Orders         []Order
-}
-
-type ClientEvents struct {
-    to_master       chan network.Packet
-    from_master     chan network.Packet
-}
-
-type MasterEvents struct {
-    to_clients       chan network.Packet
-    from_client      chan network.Packet
-}
-
+// Might want to configure this at startup...
 var client_port int = 10012
 var master_port int = 20012
 
+// TODO: Should we also include the port number?
+// If so, return ID(sender.String()).
+// It is needed to differentiate an ID from
+// a machine that is both running a master instance
+// and a client instance, but we currently don't
+// need that.
 func getSenderID(sender *net.UDPAddr) ID {
     return ID(sender.IP.String())
 }
@@ -55,42 +41,6 @@ func GetMachineID() ID {
         }
     }
     return "127.0.0.1"
-}
-
-func DecodeMasterPacket(b []byte) (MasterData, error) {
-    var result MasterData
-    err := json.Unmarshal(b, &result)
-    if err == nil {
-        for _, o := range(result.Orders) {
-            if o.TakenBy == network.InvalidID {
-                log.Fatal("[CLIENT]\tA non-taken order was received")
-            }
-        }
-    }
-
-    return result, err
-}
-
-func DecodeClientPacket(b []byte) (ClientData, error) {
-    var result ClientData
-    err := json.Unmarshal(b, &result)
-    return result, err
-}
-
-func EncodeMasterData(m MasterData) []byte {
-    result, err := json.Marshal(m)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return result
-}
-
-func EncodeClientData(c ClientData) []byte {
-    result, err := json.Marshal(c)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return result
 }
 
 func listen(socket *net.UDPConn, incoming chan Packet) {
@@ -138,14 +88,14 @@ func bind(port int) *net.UDPConn {
     return socket
 }
 
-func ClientWorker(from_master chan MasterData, to_master chan ClientData) {
+func ClientWorker(from_master, to_master chan Packet) {
     socket := bind(client_port)
     go listen(socket, from_master)
     broadcast(socket, master_port, to_master)
     socket.Close()
 }
 
-func MasterWorker(from_client chan ClientData, to_clients chan MasterData) {
+func MasterWorker(from_client, to_clients chan Packet) {
     socket := bind(master_port)
     go listen(socket, from_client)
     broadcast(socket, client_port, to_clients)
