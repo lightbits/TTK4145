@@ -1,1 +1,0 @@
-emacs -q -l ./.emacs
