@@ -1,3 +1,10 @@
+/*
+TODO:
+* Split up into modules: queue, client, master
+* Add timer that fires when a client has not performed his order in a while
+* Make client and master more clean
+*/
+
 package main
 
 import (
@@ -24,8 +31,6 @@ type Client struct {
     LastPassedFloor int
     Timer           *time.Timer
     HasTimedOut     bool
-    // TODO: Add timer which fires off if the client has been on the same
-    // floor for a long time, when it has a floor to go to.
 }
 
 type ClientData struct {
@@ -102,14 +107,14 @@ func WaitForBackup(c Channels, initial_queue []Order) {
         select {
         case packet := <- c.from_client:
             // DEBUG:
-            // MasterLoop(c, packet.Address)
+            MasterLoop(c, packet.Address, initial_queue)
 
-            if packet.Address != machine_id {
-                MasterLoop(c, packet.Address, initial_queue)
-                return
-            } else {
-                fmt.Println("[MASTER]\tCannot use own machine as backup client")
-            }
+            // if packet.Address != machine_id {
+            //     MasterLoop(c, packet.Address, initial_queue)
+            //     return
+            // } else {
+            //     fmt.Println("[MASTER]\tCannot use own machine as backup client")
+            // }
         }
     }
 }
@@ -382,9 +387,11 @@ func RemoveAcknowledgedRequests(requests, orders []Order) []Order {
         master_has_it := false
         acknowledged := false
         for _, o := range(orders) {
-            if IsSameOrder(r, o) && r.Done == o.Done {
+            if IsSameOrder(r, o) {
                 master_has_it = true
-                acknowledged = true
+                if r.Done == o.Done {
+                    acknowledged = true
+                }
             }
         }
         if !master_has_it && r.Done {
@@ -408,7 +415,7 @@ func TestRemoveAcknowledgedRequests() bool {
     orders := make([]Order, 0)
     orders = append(orders, order)
     order.Done = false
-    order.Button.Floor = 6
+    order.Button.Floor = 5
     requests := make([]Order, 0)
     requests = append(requests, order)
     requests = RemoveAcknowledgedRequests(requests, orders)
@@ -502,7 +509,7 @@ func ClientLoop(c Channels, master network.ID) {
                 }
             }
 
-            RemoveAcknowledgedRequests(requests, orders)
+            requests = RemoveAcknowledgedRequests(requests, orders)
         }
     }
 }
@@ -592,13 +599,13 @@ func main() {
 
     // TestDriver(channels)
 
-    fmt.Println(TestRemoveAcknowledgedRequests())
+    // fmt.Println(TestRemoveAcknowledgedRequests())
 
-    // if start_as_master {
-    //     initial_queue := make([]Order, 0)
-    //     go WaitForBackup(channels, initial_queue)
-    // }
+    if start_as_master {
+        initial_queue := make([]Order, 0)
+        go WaitForBackup(channels, initial_queue)
+    }
 
-    // go network.ClientWorker(channels.from_master, channels.to_master)
-    // WaitForMaster(channels, nil)
+    go network.ClientWorker(channels.from_master, channels.to_master)
+    WaitForMaster(channels, nil)
 }

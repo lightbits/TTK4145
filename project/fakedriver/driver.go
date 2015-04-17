@@ -59,7 +59,7 @@ func Poll(button_pressed chan OrderButton,
 
     for {
         floor_reached <- 0
-        time.Sleep(5 * time.Second)
+        time.Sleep(3 * time.Second)
         button_pressed <- OrderButton{3, ButtonDown}
         button_pressed <- OrderButton{4, ButtonUp}
         time.Sleep(1 * time.Second)
@@ -68,7 +68,8 @@ func Poll(button_pressed chan OrderButton,
         floor_reached <- 2
         time.Sleep(1 * time.Second)
         floor_reached <- 3
-        time.Sleep(4 * time.Second)
+        time.Sleep(5 * time.Second)
         floor_reached <- 4
+        break
     }
 }
