@@ -3,13 +3,10 @@ package lift
 import (
     "time"
     "log"
-    // "../driver"
     "../fakedriver"
     "fmt"
 )
 
-// TODO: Stop button event, obstruction event. Belong here
-// or in event manager?
 func Init(
     floor_reached             chan int,
     last_passed_floor_changed chan int,

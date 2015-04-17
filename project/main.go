@@ -3,6 +3,7 @@ TODO:
 * Split up into modules: queue, client, master
 * Add timer that fires when a client has not performed his order in a while
 * Make client and master more clean
+* Implement WaitForMaster
 */
 
 package main
@@ -15,32 +16,18 @@ import (
     "encoding/json"
     "./lift"
     "./network"
-    // "./driver"
+    "./queue"
     "./fakedriver"
 )
 
-type Order struct {
-    Button   driver.OrderButton
-    TakenBy  network.ID
-    Done     bool
-    Priority bool
-}
-
-type Client struct {
-    ID              network.ID
-    LastPassedFloor int
-    Timer           *time.Timer
-    HasTimedOut     bool
-}
-
 type ClientData struct {
     LastPassedFloor int
-    Requests        []Order
+    Requests        []queue.Order
 }
 
 type MasterData struct {
     AssignedBackup network.ID
-    Orders         []Order
+    Orders         []queue.Order
 }
 
 type Channels struct {
@@ -65,14 +52,6 @@ type Channels struct {
 func DecodeMasterPacket(b []byte) (MasterData, error) {
     var result MasterData
     err := json.Unmarshal(b, &result)
-    if err == nil {
-        for _, o := range(result.Orders) {
-            if o.TakenBy == network.InvalidID {
-                log.Fatal("[CLIENT]\tA non-taken order was received")
-            }
-        }
-    }
-
     return result, err
 }
 
@@ -98,7 +77,7 @@ func EncodeClientData(c ClientData) []byte {
     return result
 }
 
-func WaitForBackup(c Channels, initial_queue []Order) {
+func WaitForBackup(c Channels, initial_queue []queue.Order) {
     go network.MasterWorker(c.from_client, c.to_clients)
     machine_id := network.GetMachineID()
     fmt.Println("[MASTER]\tRunning on machine", machine_id)
@@ -126,139 +105,35 @@ func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan netwo
     }
 }
 
-func DistanceSqrd(a, b int) int {
-    return (a - b) * (a - b)
-}
-
-func ClosestActiveLift(clients map[network.ID]Client, floor int) network.ID {
-    closest_df := 100
-    closest_id := network.InvalidID
-    for id, client := range(clients) {
-        if client.HasTimedOut {
-            continue
+func AddNewOrders(requests, orders []queue.Order, sender network.ID) []queue.Order {
+    for _, r := range(requests) {
+        if r.Button.Type == driver.ButtonOut {
+            r.TakenBy = sender
         }
-        df := DistanceSqrd(client.LastPassedFloor, floor)
-        if df < closest_df {
-            closest_df = df
-            closest_id = id
+
+        if queue.IsNewOrder(r, orders) {
+            orders = append(orders, r)
         }
     }
-    return closest_id
+    return orders
 }
 
-func ClosestOrderNear(owner network.ID, orders []Order, floor int) int {
-    closest_i := -1
-    closest_d := -1
-    for i, o := range(orders) {
-        if o.TakenBy != owner {
-            continue
-        }
-        d := DistanceSqrd(o.Button.Floor, floor)
-        if closest_i == -1 || d < closest_d {
-            closest_i = i
-            closest_d = d
-        }
-    }
-    return closest_i
-}
-
-func ClosestOrderAlong(owner network.ID, orders []Order, from, to int) int {
-    closest_i := -1
-    closest_d := -1
-    for i, o := range(orders) {
-        if o.TakenBy != owner {
-            continue
-        }
-        // Deliberately not using o.Floor >= from, since
-        // the lift might not actually be at its last passed
-        // floor by the time we distribute work.
-        in_range   := o.Button.Floor > from && o.Button.Floor <= to
-        dir_up     := to - from > 0 // Likewise, these are not using = since we
-        dir_down   := to - from < 0 // assert that LPF != TF when calling this
-        order_up   := o.Button.Type == driver.ButtonUp
-        order_down := o.Button.Type == driver.ButtonDown
-        order_out  := o.Button.Type == driver.ButtonOut
-        if in_range && ((dir_up   && (order_up   || order_out)) ||
-                        (dir_down && (order_down || order_out))) {
-            d := DistanceSqrd(o.Button.Floor, from)
-            if closest_i == -1 || d < closest_d {
-                closest_i = i
-                closest_d = d
+func DeleteDoneOrders(requests, orders []queue.Order) []queue.Order {
+    for i := 0; i < len(orders); i++ {
+        for _, r := range(requests) {
+            if queue.IsSameOrder(orders[i], r) && r.Done {
+                orders[i].Done = true
             }
         }
-    }
-    return closest_i
-}
-
-/*
-This is not a very good prioritization algorithm, but
-we have the data we need if we want to make it better.
---
-The distribution/prioritization works in two steps.
-One is a global pass, which distributes all non-taken
-orders across all the lifts, based purely on proximity.
-
-The second pass works on each individual lift, picking
-out a single order that should be prioritized. If the
-lift is idle (i.e. it has reached its target), the next
-order is chosen to be whichever is closest.
-
-If the lift is moving, we check if there is an order
-for the same direction that is closer along its path.
-If so, we make that the priority.
-
-Note that if the lift completes an order, the order will
-be deleted from the master side. When this happens, the
-lift might not have a target floor. But this is OK, since
-we interpret this as the lift being idle.
-*/
-func DistributeWork(clients map[network.ID]Client, orders []Order) {
-    for i, o := range(orders) {
-        if (o.Button.Type != driver.ButtonOut) &&
-           (o.TakenBy == network.InvalidID ||
-            clients[o.TakenBy].HasTimedOut) {
-
-            closest := ClosestActiveLift(clients, o.Button.Floor)
-            if closest == network.InvalidID {
-                log.Fatal("Cannot distribute work when there are no lifts!")
-            }
-            o.TakenBy = closest
-            orders[i] = o
+        if orders[i].Done {
+            orders = append(orders[:i], orders[i+1:]...)
+            i--
         }
     }
-
-    for id, c := range(clients) {
-        target_floor := -1
-        current_pri  := -1
-        for index, order := range(orders) {
-            if order.TakenBy == id && order.Priority {
-                target_floor = order.Button.Floor
-                current_pri = index
-            }
-        }
-
-        better_pri := -1
-        if target_floor >= 0 {
-            better_pri = ClosestOrderAlong(id, orders, c.LastPassedFloor, target_floor)
-        } else {
-            better_pri = ClosestOrderNear(id, orders, c.LastPassedFloor)
-        }
-
-        if better_pri >= 0 {
-            if current_pri >= 0 {
-                orders[current_pri].Priority = false
-            }
-            orders[better_pri].Priority = true
-        }
-    }
+    return orders
 }
 
-func IsSameOrder(a, b Order) bool {
-    return a.Button.Floor == b.Button.Floor &&
-           a.Button.Type  == b.Button.Type
-}
-
-func MasterLoop(c Channels, backup network.ID, initial_queue []Order) {
+func MasterLoop(c Channels, backup network.ID, initial_queue []queue.Order) {
     TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL    := 250 * time.Millisecond
 
@@ -266,73 +141,39 @@ func MasterLoop(c Channels, backup network.ID, initial_queue []Order) {
     client_timed_out := make(chan network.ID)
 
     orders  := initial_queue
-    clients := make(map[network.ID]Client)
+    clients := make(map[network.ID]queue.Client)
 
     fmt.Println("[MASTER]\tStarting master with backup", backup)
     for {
         select {
         case packet := <- c.from_client:
-            fmt.Println("[MASTER]\tClient said", string(packet.Data))
 
             data, err := DecodeClientPacket(packet.Data)
             if err != nil {
                 break
             }
+            fmt.Println("[MASTER]\tClient said", data)
 
-            // Add client if new, and update information
-            // TODO: Seperate this into a different module? Network module?
             sender_id := packet.Address
             client, exists := clients[sender_id]
-            if exists {
-                client.Timer.Reset(TIMEOUT_INTERVAL)
-                client.LastPassedFloor = data.LastPassedFloor
-                clients[sender_id] = client
-            } else {
+            if !exists {
                 timer := time.NewTimer(TIMEOUT_INTERVAL)
-                client := Client {
-                    ID:              sender_id,
-                    LastPassedFloor: data.LastPassedFloor,
-                    Timer:           timer,
+                client = queue.Client {
+                    ID: sender_id,
+                    Timer: timer,
                 }
-                clients[sender_id] = client
                 go ListenForClientTimeout(sender_id, timer, client_timed_out)
             }
+            client.Timer.Reset(TIMEOUT_INTERVAL)
+            client.LastPassedFloor = data.LastPassedFloor
+            clients[sender_id] = client
 
-            // Synchronize our list of jobs with any new or finished
-            // jobs given by the client's requests
-            requests := data.Requests
-            for _, r := range(requests) {
+            orders = AddNewOrders(data.Requests, orders, sender_id)
+            orders = DeleteDoneOrders(data.Requests, orders)
 
-                is_new_order := true
-                for i, o := range(orders) {
-                    if IsSameOrder(o, r) {
-                        if r.Done {
-                            o.Done = true
-                            orders[i] = o
-                        }
-                        is_new_order = false
-                    }
-                }
-
-                if r.Button.Type == driver.ButtonOut {
-                    r.TakenBy = sender_id
-                }
-
-                if is_new_order {
-                    orders = append(orders, r)
-                }
-            }
-
-            // Delete finished jobs
-            for i := 0; i < len(orders); i++ {
-                if orders[i].Done {
-                    orders = append(orders[:i], orders[i+1:]...)
-                    i--
-                }
-            }
 
         case <- time_to_send.C:
-            DistributeWork(clients, orders)
+            queue.DistributeWork(clients, orders)
             data := MasterData {
                 AssignedBackup: backup,
                 Orders:         orders,
@@ -347,15 +188,16 @@ func MasterLoop(c Channels, backup network.ID, initial_queue []Order) {
             if exists {
                 client.HasTimedOut = true
                 clients[who] = client
-            } else {
-                log.Fatal("[MASTER]\tA non-existent client timed out")
+            }
+            if who == backup {
+                WaitForBackup(c, orders)
             }
         }
     }
 }
 
-func WaitForMaster(c Channels, remaining_orders []Order) {
-    fmt.Println("[CLIENT]\tWaiting for master...")
+func WaitForMaster(c Channels, remaining_orders []queue.Order) {
+    fmt.Println("[CLIENT]\tWaiting for ..")
     time_to_ping := time.NewTicker(1*time.Second)
 
     for {
@@ -381,13 +223,13 @@ func WaitForMaster(c Channels, remaining_orders []Order) {
     }
 }
 
-func RemoveAcknowledgedRequests(requests, orders []Order) []Order {
+func RemoveAcknowledgedRequests(requests, orders []queue.Order) []queue.Order {
     for i := 0; i < len(requests); i++ {
         r := requests[i]
         master_has_it := false
         acknowledged := false
         for _, o := range(orders) {
-            if IsSameOrder(r, o) {
+            if queue.IsSameOrder(r, o) {
                 master_has_it = true
                 if r.Done == o.Done {
                     acknowledged = true
@@ -405,24 +247,6 @@ func RemoveAcknowledgedRequests(requests, orders []Order) []Order {
     return requests
 }
 
-func TestRemoveAcknowledgedRequests() bool {
-    order := Order {
-        Button: driver.OrderButton {
-            Floor: 5,
-            Type: driver.ButtonUp,
-        },
-    }
-    orders := make([]Order, 0)
-    orders = append(orders, order)
-    order.Done = false
-    order.Button.Floor = 5
-    requests := make([]Order, 0)
-    requests = append(requests, order)
-    requests = RemoveAcknowledgedRequests(requests, orders)
-    fmt.Println(requests)
-    return len(requests) == 0
-}
-
 func ClientLoop(c Channels, master network.ID) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL := 250 * time.Millisecond
@@ -430,8 +254,8 @@ func ClientLoop(c Channels, master network.ID) {
     master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
     time_to_send := time.NewTicker(SEND_INTERVAL)
 
-    orders := make([]Order, 0) // Local copy of master's queue
-    requests := make([]Order, 0) // Unacknowledged local events
+    orders := make([]queue.Order, 0) // Local copy of master's queue
+    requests := make([]queue.Order, 0) // Unacknowledged local events
 
     our_id := network.GetMachineID()
     last_passed_floor := 0
@@ -457,7 +281,7 @@ func ClientLoop(c Channels, master network.ID) {
 
         case button := <- c.button_pressed:
             fmt.Println("[CLIENT]\tA button was pressed")
-            order := Order {
+            order := queue.Order {
                 Button: button,
             }
             requests = append(requests, order)
@@ -474,15 +298,14 @@ func ClientLoop(c Channels, master network.ID) {
             }
 
         case packet := <- c.from_master:
-            fmt.Println("[CLIENT]\tMaster said", string(packet.Data))
             master_timeout.Reset(MASTER_TIMEOUT_INTERVAL)
             data, err := DecodeMasterPacket(packet.Data)
             if err != nil {
                 break
             }
+            fmt.Println("[CLIENT]\tMaster said", data)
 
             if data.AssignedBackup == our_id {
-                fmt.Println("[CLIENT]\tWe are the backup!")
                 is_backup = true
             } else {
                 is_backup = false
@@ -498,7 +321,7 @@ func ClientLoop(c Channels, master network.ID) {
                 if o.TakenBy == our_id && o.Priority {
                     is_done := false
                     for _, r := range(requests) {
-                        if IsSameOrder(o, r) && r.Done {
+                        if queue.IsSameOrder(o, r) && r.Done {
                             is_done = true
                         }
                     }
@@ -510,49 +333,6 @@ func ClientLoop(c Channels, master network.ID) {
             }
 
             requests = RemoveAcknowledgedRequests(requests, orders)
-        }
-    }
-}
-
-func TestNetwork(channels Channels) {
-    go network.ClientWorker(channels.from_master, channels.to_master)
-    go network.MasterWorker(channels.from_client, channels.to_clients)
-    t1 := time.NewTimer(1*time.Second)
-    t2 := time.NewTimer(2*time.Second)
-    for {
-        select {
-        case <- t1.C:
-            fmt.Println("[NETTEST]\tSending to all clients")
-            channels.to_clients <- network.Packet{
-                Data: []byte("A")}
-
-        case <- t2.C:
-            fmt.Println("[NETTEST]\tSending to any master")
-            channels.to_master <- network.Packet{
-                Data: []byte("BB")}
-
-        case p := <- channels.from_client:
-            fmt.Println("[NETTEST]\tClient sent:", len(p.Data), "bytes from", p.Address)
-
-        case p := <- channels.from_master:
-            fmt.Println("[NETTEST]\tMaster sent:", len(p.Data), "bytes from", p.Address)
-        }
-    }
-}
-
-func TestDriver(channels Channels) {
-    for {
-        select {
-        case btn := <- channels.button_pressed:
-            fmt.Println("[TEST]\tButton pressed")
-            driver.SetButtonLamp(btn, true)
-        case <- channels.floor_reached:
-            fmt.Println("[TEST]\tFloor reached")
-        case <- channels.stop_button:
-            driver.ClearAllButtonLamps()
-            fmt.Println("[TEST]\tStop button pressed")
-        case <- channels.obstruction:
-            fmt.Println("[TEST]\tObstruction changed")
         }
     }
 }
@@ -597,12 +377,8 @@ func main() {
         channels.stop_button,
         channels.obstruction)
 
-    // TestDriver(channels)
-
-    // fmt.Println(TestRemoveAcknowledgedRequests())
-
     if start_as_master {
-        initial_queue := make([]Order, 0)
+        initial_queue := make([]queue.Order, 0)
         go WaitForBackup(channels, initial_queue)
     }
 

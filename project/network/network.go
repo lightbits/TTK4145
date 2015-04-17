@@ -14,16 +14,9 @@ type Packet struct {
     Data    []byte
 }
 
-// Might want to configure this at startup...
 var client_port int = 10012
 var master_port int = 20012
 
-// TODO: Should we also include the port number?
-// If so, return ID(sender.String()).
-// It is needed to differentiate an ID from
-// a machine that is both running a master instance
-// and a client instance, but we currently don't
-// need that.
 func getSenderID(sender *net.UDPAddr) ID {
     return ID(sender.IP.String())
 }
@@ -65,11 +58,10 @@ func broadcast(socket *net.UDPConn, to_port int, outgoing chan Packet) {
     }
     for {
         packet := <- outgoing
-        sent_bytes, err := socket.WriteToUDP(packet.Data, remote)
+        _, err := socket.WriteToUDP(packet.Data, remote)
         if err != nil {
             log.Println(err)
         }
-        fmt.Printf("[NETWORK]\tSent %d bytes to %d\n", sent_bytes, to_port)
     }
 }
 
