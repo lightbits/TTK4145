@@ -1,12 +1,13 @@
 package client
 
 import (
-	"../queue"
-	"../driver"
-	"../network"
-	"../com"
-	"time"
-	"fmt"
+    "../queue"
+    "../driver"
+    "../network"
+    "../com"
+    "../master"
+    "time"
+    "fmt"
 )
 
 func WaitForMaster(c com.Channels, remaining_orders []queue.Order) {
@@ -60,7 +61,7 @@ func RemoveAcknowledgedRequests(requests, orders []queue.Order) []queue.Order {
     return requests
 }
 
-func ClientLoop(c com.Channels, master network.ID) {
+func ClientLoop(c com.Channels, master_id network.ID) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL := 250 * time.Millisecond
 
@@ -80,8 +81,15 @@ func ClientLoop(c com.Channels, master network.ID) {
         case <- master_timeout.C:
             if is_backup {
                 fmt.Println("[CLIENT]\tMaster timed out; taking over!")
-                // go network.MasterWorker(c.FromClient, c.ToClients)
-                // go WaitForBackup(c, orders)
+
+                // TODO: This is a weird to fix the fact that the master's
+                // client also drops out. Ideally, we should reset orders
+                // after a certain time of nothing happening.
+                // TODO: Handle this in a different way?
+                queue.RemoveExternalAssignments(orders, master_id)
+
+                go network.MasterWorker(c.FromClient, c.ToClients)
+                go master.WaitForBackup(c, orders)
             }
 
         case <- time_to_send.C:

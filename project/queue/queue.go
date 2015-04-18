@@ -1,10 +1,10 @@
 package queue
 
 import (
-	"log"
-	"../driver"
-	"../network"
-	"time"
+    "log"
+    "../driver"
+    "../network"
+    "time"
 )
 
 type Order struct {
@@ -36,7 +36,7 @@ func IsNewOrder(request Order, orders []Order) bool {
 }
 
 func DistributeWork(clients map[network.ID]Client, orders []Order) {
-	// Distribute to closest lift
+    // Distribute to closest lift
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
            (o.TakenBy == network.InvalidID ||

@@ -1,12 +1,12 @@
 package master
 
 import (
-	"../queue"
-	"../com"
-	"../network"
-	"../driver"
-	"fmt"
-	"time"
+    "../queue"
+    "../com"
+    "../network"
+    "../driver"
+    "fmt"
+    "time"
 )
 
 func WaitForBackup(c com.Channels, initial_queue []queue.Order,) {
