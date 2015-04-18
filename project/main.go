@@ -17,7 +17,7 @@ import (
     "./lift"
     "./network"
     "./queue"
-    "./fakedriver"
+    "./driver"
 )
 
 type ClientData struct {
@@ -77,8 +77,8 @@ func EncodeClientData(c ClientData) []byte {
     return result
 }
 
-func WaitForBackup(c Channels, initial_queue []queue.Order) {
-    go network.MasterWorker(c.from_client, c.to_clients)
+func WaitForBackup(c Channels, initial_queue []queue.Order,) {
+
     machine_id := network.GetMachineID()
     fmt.Println("[MASTER]\tRunning on machine", machine_id)
     fmt.Println("[MASTER]\tWaiting for backup...")
@@ -134,13 +134,18 @@ func DeleteDoneOrders(requests, orders []queue.Order) []queue.Order {
 }
 
 func MasterLoop(c Channels, backup network.ID, initial_queue []queue.Order) {
+
     TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL    := 250 * time.Millisecond
 
     time_to_send     := time.NewTicker(SEND_INTERVAL)
     client_timed_out := make(chan network.ID)
 
-    orders  := initial_queue
+    orders := initial_queue
+    if initial_queue == nil {
+        orders = make([]queue.Order, 0)
+    }
+
     clients := make(map[network.ID]queue.Client)
 
     fmt.Println("[MASTER]\tStarting master with backup", backup)
@@ -157,6 +162,7 @@ func MasterLoop(c Channels, backup network.ID, initial_queue []queue.Order) {
             sender_id := packet.Address
             client, exists := clients[sender_id]
             if !exists {
+                fmt.Println("[MASTER]\tAdding new client", sender_id)
                 timer := time.NewTimer(TIMEOUT_INTERVAL)
                 client = queue.Client {
                     ID: sender_id,
@@ -165,6 +171,7 @@ func MasterLoop(c Channels, backup network.ID, initial_queue []queue.Order) {
                 go ListenForClientTimeout(sender_id, timer, client_timed_out)
             }
             client.Timer.Reset(TIMEOUT_INTERVAL)
+            client.HasTimedOut = false
             client.LastPassedFloor = data.LastPassedFloor
             clients[sender_id] = client
 
@@ -186,6 +193,7 @@ func MasterLoop(c Channels, backup network.ID, initial_queue []queue.Order) {
             fmt.Println("[MASTER]\tClient", who, "timed out")
             client, exists := clients[who]
             if exists {
+                queue.RemoveExternalAssignments(orders, who)
                 client.HasTimedOut = true
                 clients[who] = client
             }
@@ -267,6 +275,7 @@ func ClientLoop(c Channels, master network.ID) {
         case <- master_timeout.C:
             if is_backup {
                 fmt.Println("[CLIENT]\tMaster timed out; taking over!")
+                go network.MasterWorker(c.from_client, c.to_clients)
                 go WaitForBackup(c, orders)
             }
 
@@ -378,8 +387,8 @@ func main() {
         channels.obstruction)
 
     if start_as_master {
-        initial_queue := make([]queue.Order, 0)
-        go WaitForBackup(channels, initial_queue)
+        go network.MasterWorker(channels.from_client, channels.to_clients)
+        go WaitForBackup(channels, nil)
     }
 
     go network.ClientWorker(channels.from_master, channels.to_master)

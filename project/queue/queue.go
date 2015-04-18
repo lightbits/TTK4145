@@ -2,7 +2,7 @@ package queue
 
 import (
 	"log"
-	"../fakedriver"
+	"../driver"
 	"../network"
 	"time"
 )
@@ -73,6 +73,15 @@ func DistributeWork(clients map[network.ID]Client, orders []Order) {
                 orders[current_pri].Priority = false
             }
             orders[better_pri].Priority = true
+        }
+    }
+}
+
+func RemoveExternalAssignments(orders []Order, who network.ID) {
+    for i, o := range(orders) {
+        if o.TakenBy == who && o.Button.Type != driver.ButtonOut {
+            o.TakenBy = network.InvalidID
+            orders[i] = o
         }
     }
 }
