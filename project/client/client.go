@@ -135,6 +135,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
 
             driver.ClearAllButtonLamps()
 
+            // TODO: Make this cleaner/more readable/understandable
             orders = data.Orders
             for _, o := range(orders) {
                 if !(o.Button.Type == driver.ButtonOut && o.TakenBy != our_id) {

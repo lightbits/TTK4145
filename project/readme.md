@@ -1,16 +1,18 @@
 Todo
 ----
 
-* Hide some implementation details? For example in driver, only expose methods that work on the Order struct, etc.
-
 * Design issues
     - How do we handle case when backup loses connection to primary,
     but other clients remain connected to primary (which gives two primaries)?
 
-* Implement lift controller
+* Implement WaitForMaster, finish orders. Perhaps use queue module to
+  do local order sorting.
+
+* Implement order timers - somehow. Perhaps set timer inside distributework?
 
 Done
 ----
+* Implement lift controller
 * Implement job prioritization (DistributeWork)
 * Synchronize order queue across master and client
 * Implement wait for backup

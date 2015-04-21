@@ -20,7 +20,6 @@ func Init(
     type State int
     const (
         Idle State = iota
-        Startup
         DoorOpen
         Moving
     )
@@ -34,14 +33,14 @@ func Init(
         case <- door_timer.C:
             switch (state) {
                 case DoorOpen:
-                    // TODO: if lpf == tf
+                    // TODO: if lpf == tf, incase lift was dragged
                     fmt.Println("[LIFT]\tCompleted floor @ DoorOpen")
                     completed_floor <- target_floor
-                    target_floor = -1
+                    // target_floor = -1 // TODO: Remove this?
                     driver.CloseDoor()
                     state = Idle
-                case Idle:    log.Fatal("Door closed @ Idle")
-                case Moving:  log.Fatal("Door closed @ Moving")
+                case Idle:    log.Println("Door closed @ Idle")
+                case Moving:  log.Println("Door closed @ Moving")
             }
 
         case floor := <- target_floor_changed:
@@ -74,9 +73,13 @@ func Init(
                         driver.MotorStop()
                         driver.OpenDoor()
                         state = DoorOpen
+                    } else if target_floor > floor {
+                        driver.MotorUp()
+                    } else if target_floor < floor {
+                        driver.MotorDown()
                     }
-                case Idle:     log.Fatal("Reached target @ Idle")
-                case DoorOpen: log.Fatal("Reached target @ DoorOpen")
+                case Idle:     log.Println("Reached floor @ Idle")
+                case DoorOpen: log.Println("Reached floor @ DoorOpen")
             }
 
         case <- stop_button: // ignore
