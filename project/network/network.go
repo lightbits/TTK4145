@@ -66,9 +66,9 @@ func broadcast(socket *net.UDPConn, to_port int, outgoing chan Packet) {
 }
 
 func bind(port int) *net.UDPConn {
-    // local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", port)) // Debugging
+    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", port)) // Debugging
 
-    local, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
+    // local, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
     if err != nil {
         log.Fatal(err)
     }

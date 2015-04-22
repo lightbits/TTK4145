@@ -8,15 +8,16 @@ Todo
 * Implement WaitForMaster, finish orders. Perhaps use queue module to
   do local order sorting.
 
-* Implement order timers - somehow. Perhaps set timer inside distributework?
-
 * Explicit acceptance test on network packets, among other
     no unassigned orders (important! for backup takeover, always consistent state)
 
 * Move decode/encode functions into network?
 
+* Test on lab
+
 Done
 ----
+* Implement local client watchdog
 * Implement lift controller
 * Implement job prioritization (DistributeWork)
 * Synchronize order queue across master and client

@@ -6,6 +6,7 @@ import (
 )
 
 const N_FLOORS = 4
+const INVALID_FLOOR = -1
 
 type ButtonType int
 const (

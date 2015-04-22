@@ -27,7 +27,7 @@ func main() {
 
     // Lift events
     channels.LastPassedFloorChanged = make(chan int)
-    channels.TargetFloorChanged     = make(chan int)
+    channels.NewFloorOrder          = make(chan int)
     channels.CompletedFloor         = make(chan int)
 
     // Driver events
@@ -53,14 +53,14 @@ func main() {
     go lift.Init(
         channels.FloorReached,
         channels.LastPassedFloorChanged,
-        channels.TargetFloorChanged,
+        channels.NewFloorOrder,
         channels.CompletedFloor,
         channels.StopButton,
         channels.Obstruction)
 
     if start_as_master {
         go network.MasterWorker(channels.FromClient, channels.ToClients)
-        go master.WaitForBackup(channels, nil, nilo)
+        go master.WaitForBackup(channels, nil, nil)
     }
 
     go network.ClientWorker(channels.FromMaster, channels.ToMaster)

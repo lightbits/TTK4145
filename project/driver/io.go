@@ -5,6 +5,7 @@ package driver
 import "C"
 
 const N_FLOORS = 4
+const INVALID_FLOOR = -1
 
 const (
     //in port 4

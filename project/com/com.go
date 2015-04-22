@@ -31,7 +31,6 @@ type Client struct {
     LastPassedFloor int
     HasTimedOut     bool
     AliveTimer      *time.Timer `json:"-"`
-    InactiveTimer   *time.Timer `json:"-"`
 }
 
 func DecodeClientPacket(b []byte) (ClientData, error) {
@@ -65,7 +64,7 @@ func EncodeClientData(c ClientData) []byte {
 type Channels struct {
     // Lift events
     LastPassedFloorChanged chan int
-    TargetFloorChanged     chan int
+    NewFloorOrder          chan int
     CompletedFloor         chan int
 
     // Driver events

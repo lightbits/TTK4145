@@ -10,7 +10,7 @@ import (
 func Init(
     floor_reached             chan int,
     last_passed_floor_changed chan int,
-    target_floor_changed      chan int,
+    new_floor_order           chan int,
     completed_floor           chan int,
     stop_button               chan bool,
     obstruction               chan bool) {
@@ -36,14 +36,13 @@ func Init(
                     // TODO: if lpf == tf, incase lift was dragged
                     fmt.Println("[LIFT]\tCompleted floor @ DoorOpen")
                     completed_floor <- target_floor
-                    // target_floor = -1 // TODO: Remove this?
                     driver.CloseDoor()
                     state = Idle
                 case Idle:    log.Println("Door closed @ Idle")
                 case Moving:  log.Println("Door closed @ Moving")
             }
 
-        case floor := <- target_floor_changed:
+        case floor := <- new_floor_order:
             target_floor = floor
             switch (state) {
                 case Idle:

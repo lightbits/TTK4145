@@ -8,6 +8,7 @@ import (
     "../master"
     "time"
     "fmt"
+    "log"
 )
 
 func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
@@ -63,10 +64,14 @@ func RemoveAcknowledgedRequests(requests, orders []com.Order) []com.Order {
 
 func ClientLoop(c com.Channels, master_id network.ID) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
+    ORDER_DEADLINE_INTERVAL := 5 * driver.N_FLOORS * time.Second
     SEND_INTERVAL := 250 * time.Millisecond
 
     master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
+    order_deadline := time.NewTimer(ORDER_DEADLINE_INTERVAL)
     time_to_send := time.NewTicker(SEND_INTERVAL)
+
+    order_deadline.Stop()
 
     clients := make(map[network.ID]com.Client) // Local copy of master's client list
     orders := make([]com.Order, 0) // Local copy of master's queue
@@ -75,6 +80,8 @@ func ClientLoop(c com.Channels, master_id network.ID) {
     our_id := network.GetMachineID()
     last_passed_floor := 0
     is_backup := false
+
+    target_floor := 0
 
     fmt.Println("[CLIENT]\tStarting client")
     for {
@@ -87,6 +94,9 @@ func ClientLoop(c com.Channels, master_id network.ID) {
                 go network.MasterWorker(c.FromClient, c.ToClients)
                 go master.WaitForBackup(c, orders, clients)
             }
+
+        case <- order_deadline.C:
+            log.Fatal("[FATAL]\tFailed to complete order within deadline.")
 
         case <- time_to_send.C:
             data := com.ClientData {
@@ -108,6 +118,8 @@ func ClientLoop(c com.Channels, master_id network.ID) {
             last_passed_floor = floor
 
         case floor := <- c.CompletedFloor:
+            target_floor = driver.INVALID_FLOOR
+            order_deadline.Stop()
             for _, o := range(orders) {
                 if o.TakenBy == our_id && o.Button.Floor == floor {
                     o.Done = true
@@ -144,10 +156,12 @@ func ClientLoop(c com.Channels, master_id network.ID) {
                             is_done = true
                         }
                     }
-                    if !is_done {
-                        c.TargetFloorChanged <- o.Button.Floor
+                    if !is_done && target_floor != o.Button.Floor {
+                        target_floor = o.Button.Floor
+                        c.NewFloorOrder <- target_floor
+                        order_deadline.Reset(ORDER_DEADLINE_INTERVAL)
+                        fmt.Println("[CLIENT]\tTarget floor:", target_floor)
                     }
-                    fmt.Println("[CLIENT]\tTarget floor:", o.Button.Floor)
                 }
             }
 
