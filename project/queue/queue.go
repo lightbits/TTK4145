@@ -4,29 +4,15 @@ import (
     "log"
     "../driver"
     "../network"
-    "time"
+    "../com"
 )
 
-type Order struct {
-    Button   driver.OrderButton
-    TakenBy  network.ID
-    Done     bool
-    Priority bool
-}
-
-type Client struct {
-    ID              network.ID
-    LastPassedFloor int
-    Timer           *time.Timer
-    HasTimedOut     bool
-}
-
-func IsSameOrder(a, b Order) bool {
+func IsSameOrder(a, b com.Order) bool {
     return a.Button.Floor == b.Button.Floor &&
            a.Button.Type  == b.Button.Type
 }
 
-func IsNewOrder(request Order, orders []Order) bool {
+func IsNewOrder(request com.Order, orders []com.Order) bool {
     for _, o := range(orders) {
         if IsSameOrder(o, request) {
             return false
@@ -35,7 +21,7 @@ func IsNewOrder(request Order, orders []Order) bool {
     return true
 }
 
-func DistributeWork(clients map[network.ID]Client, orders []Order) {
+func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
     // Distribute to closest lift
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
@@ -77,7 +63,7 @@ func DistributeWork(clients map[network.ID]Client, orders []Order) {
     }
 }
 
-func RemoveExternalAssignments(orders []Order, who network.ID) {
+func RemoveExternalAssignments(orders []com.Order, who network.ID) {
     for i, o := range(orders) {
         if o.TakenBy == who && o.Button.Type != driver.ButtonOut {
             o.TakenBy = network.InvalidID
@@ -90,7 +76,7 @@ func distanceSqrd(a, b int) int {
     return (a - b) * (a - b)
 }
 
-func closestActiveLift(clients map[network.ID]Client, floor int) network.ID {
+func closestActiveLift(clients map[network.ID]com.Client, floor int) network.ID {
     closest_df := 100
     closest_id := network.InvalidID
     for id, client := range(clients) {
@@ -106,7 +92,7 @@ func closestActiveLift(clients map[network.ID]Client, floor int) network.ID {
     return closest_id
 }
 
-func closestOrderNear(owner network.ID, orders []Order, floor int) int {
+func closestOrderNear(owner network.ID, orders []com.Order, floor int) int {
     closest_i := -1
     closest_d := -1
     for i, o := range(orders) {
@@ -122,7 +108,7 @@ func closestOrderNear(owner network.ID, orders []Order, floor int) int {
     return closest_i
 }
 
-func closestOrderAlong(owner network.ID, orders []Order, from, to int) int {
+func closestOrderAlong(owner network.ID, orders []com.Order, from, to int) int {
     closest_i := -1
     closest_d := -1
     for i, o := range(orders) {

@@ -5,6 +5,8 @@ import (
     "fmt"
 )
 
+const N_FLOORS = 4
+
 type ButtonType int
 const (
     ButtonUp ButtonType = iota

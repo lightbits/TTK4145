@@ -9,7 +9,9 @@ import (
     "time"
 )
 
-func WaitForBackup(c com.Channels, initial_queue []queue.Order,) {
+func WaitForBackup(c               com.Channels,
+                   initial_queue   []com.Order,
+                   initial_clients map[network.ID]com.Client) {
 
     machine_id := network.GetMachineID()
     fmt.Println("[MASTER]\tRunning on machine", machine_id)
@@ -18,10 +20,10 @@ func WaitForBackup(c com.Channels, initial_queue []queue.Order,) {
         select {
         case packet := <- c.FromClient:
             // DEBUG:
-            MasterLoop(c, packet.Address, initial_queue)
+            MasterLoop(c, packet.Address, initial_queue, initial_clients)
 
             // if packet.Address != machine_id {
-            //     MasterLoop(c, packet.Address, initial_queue)
+            //     MasterLoop(c, packet.Address, initial_queue, initial_clients)
             //     return
             // } else {
             //     fmt.Println("[MASTER]\tCannot use own machine as backup client")
@@ -37,7 +39,7 @@ func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan netwo
     }
 }
 
-func AddNewOrders(requests, orders []queue.Order, sender network.ID) []queue.Order {
+func AddNewOrders(requests, orders []com.Order, sender network.ID) []com.Order {
     for _, r := range(requests) {
         if r.Button.Type == driver.ButtonOut {
             r.TakenBy = sender
@@ -50,7 +52,7 @@ func AddNewOrders(requests, orders []queue.Order, sender network.ID) []queue.Ord
     return orders
 }
 
-func DeleteDoneOrders(requests, orders []queue.Order) []queue.Order {
+func DeleteDoneOrders(requests, orders []com.Order) []com.Order {
     for i := 0; i < len(orders); i++ {
         for _, r := range(requests) {
             if queue.IsSameOrder(orders[i], r) && r.Done {
@@ -65,7 +67,10 @@ func DeleteDoneOrders(requests, orders []queue.Order) []queue.Order {
     return orders
 }
 
-func MasterLoop(c com.Channels, backup network.ID, initial_queue []queue.Order) {
+func MasterLoop(c               com.Channels,
+                backup          network.ID,
+                initial_queue   []com.Order,
+                initial_clients map[network.ID]com.Client) {
 
     TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL    := 250 * time.Millisecond
@@ -75,10 +80,17 @@ func MasterLoop(c com.Channels, backup network.ID, initial_queue []queue.Order) 
 
     orders := initial_queue
     if initial_queue == nil {
-        orders = make([]queue.Order, 0)
+        orders = make([]com.Order, 0)
     }
 
-    clients := make(map[network.ID]queue.Client)
+    clients := make(map[network.ID]com.Client)
+    if initial_clients != nil {
+        for _, c := range(initial_clients) {
+            c.AliveTimer = time.NewTimer(TIMEOUT_INTERVAL)
+            clients[c.ID] = c
+            go ListenForClientTimeout(c.ID, c.AliveTimer, client_timed_out)
+        }
+    }
 
     fmt.Println("[MASTER]\tStarting master with backup", backup)
     for {
@@ -95,14 +107,14 @@ func MasterLoop(c com.Channels, backup network.ID, initial_queue []queue.Order) 
             client, exists := clients[sender_id]
             if !exists {
                 fmt.Println("[MASTER]\tAdding new client", sender_id)
-                timer := time.NewTimer(TIMEOUT_INTERVAL)
-                client = queue.Client {
+                alive_timer := time.NewTimer(TIMEOUT_INTERVAL)
+                client = com.Client {
                     ID: sender_id,
-                    Timer: timer,
+                    AliveTimer: alive_timer,
                 }
-                go ListenForClientTimeout(sender_id, timer, client_timed_out)
+                go ListenForClientTimeout(sender_id, alive_timer, client_timed_out)
             }
-            client.Timer.Reset(TIMEOUT_INTERVAL)
+            client.AliveTimer.Reset(TIMEOUT_INTERVAL)
             client.HasTimedOut = false
             client.LastPassedFloor = data.LastPassedFloor
             clients[sender_id] = client
@@ -116,6 +128,7 @@ func MasterLoop(c com.Channels, backup network.ID, initial_queue []queue.Order) 
             data := com.MasterData {
                 AssignedBackup: backup,
                 Orders:         orders,
+                Clients:        clients,
             }
             c.ToClients <- network.Packet {
                 Data: com.EncodeMasterData(data),
@@ -130,7 +143,7 @@ func MasterLoop(c com.Channels, backup network.ID, initial_queue []queue.Order) 
                 clients[who] = client
             }
             if who == backup {
-                WaitForBackup(c, orders)
+                WaitForBackup(c, orders, clients)
             }
         }
     }

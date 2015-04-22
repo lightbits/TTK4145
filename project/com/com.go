@@ -3,19 +3,35 @@ package com
 import (
     "../driver"
     "../network"
-    "../queue"
+    "time"
     "encoding/json"
     "log"
 )
 
+type Order struct {
+    Button   driver.OrderButton
+    TakenBy  network.ID
+    Done     bool
+    Priority bool
+}
+
 type ClientData struct {
     LastPassedFloor int
-    Requests        []queue.Order
+    Requests        []Order
 }
 
 type MasterData struct {
     AssignedBackup network.ID
-    Orders         []queue.Order
+    Orders         []Order
+    Clients        map[network.ID]Client
+}
+
+type Client struct {
+    ID              network.ID
+    LastPassedFloor int
+    HasTimedOut     bool
+    AliveTimer      *time.Timer `json:"-"`
+    InactiveTimer   *time.Timer `json:"-"`
 }
 
 func DecodeClientPacket(b []byte) (ClientData, error) {

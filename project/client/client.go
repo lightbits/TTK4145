@@ -10,7 +10,7 @@ import (
     "fmt"
 )
 
-func WaitForMaster(c com.Channels, remaining_orders []queue.Order) {
+func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
     fmt.Println("[CLIENT]\tWaiting for ..")
     time_to_ping := time.NewTicker(1*time.Second)
 
@@ -37,7 +37,7 @@ func WaitForMaster(c com.Channels, remaining_orders []queue.Order) {
     }
 }
 
-func RemoveAcknowledgedRequests(requests, orders []queue.Order) []queue.Order {
+func RemoveAcknowledgedRequests(requests, orders []com.Order) []com.Order {
     for i := 0; i < len(requests); i++ {
         r := requests[i]
         master_has_it := false
@@ -68,8 +68,9 @@ func ClientLoop(c com.Channels, master_id network.ID) {
     master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
     time_to_send := time.NewTicker(SEND_INTERVAL)
 
-    orders := make([]queue.Order, 0) // Local copy of master's queue
-    requests := make([]queue.Order, 0) // Unacknowledged local com
+    clients := make(map[network.ID]com.Client) // Local copy of master's client list
+    orders := make([]com.Order, 0) // Local copy of master's queue
+    requests := make([]com.Order, 0) // Unacknowledged local com
 
     our_id := network.GetMachineID()
     last_passed_floor := 0
@@ -81,15 +82,10 @@ func ClientLoop(c com.Channels, master_id network.ID) {
         case <- master_timeout.C:
             if is_backup {
                 fmt.Println("[CLIENT]\tMaster timed out; taking over!")
-
-                // TODO: This is a weird to fix the fact that the master's
-                // client also drops out. Ideally, we should reset orders
-                // after a certain time of nothing happening.
-                // TODO: Handle this in a different way?
-                queue.RemoveExternalAssignments(orders, master_id)
+                fmt.Println("[CLIENT]\tUsing:", clients)
 
                 go network.MasterWorker(c.FromClient, c.ToClients)
-                go master.WaitForBackup(c, orders)
+                go master.WaitForBackup(c, orders, clients)
             }
 
         case <- time_to_send.C:
@@ -103,7 +99,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
 
         case button := <- c.ButtonPressed:
             fmt.Println("[CLIENT]\tA button was pressed")
-            order := queue.Order {
+            order := com.Order {
                 Button: button,
             }
             requests = append(requests, order)

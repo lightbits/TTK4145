@@ -60,7 +60,7 @@ func main() {
 
     if start_as_master {
         go network.MasterWorker(channels.FromClient, channels.ToClients)
-        go master.WaitForBackup(channels, nil)
+        go master.WaitForBackup(channels, nil, nilo)
     }
 
     go network.ClientWorker(channels.FromMaster, channels.ToMaster)
