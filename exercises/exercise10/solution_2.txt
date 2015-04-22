@@ -45,10 +45,10 @@ the task set schedulable?
 
 Utilization testen for rate-monotonic fordeling
 
-    U = ∑ Cᵢ / Pᵢ ≤ n(2^(1/n) - 1),
+    U = SUM[C(i) / P(i)] ≤ n(2^(1/n) - 1),
 
-    der Cᵢ er verste-tilfelle eksekveringstid for
-    oppgave i, og Pᵢ er dens periode/deadline,
+    der C(i) er verste-tilfelle eksekveringstid for
+    oppgave i, og P(i) er dens periode/deadline,
 
 gir tilstrekkelige betingelser for at alle
 oppgavene vil kunne schedules til å
@@ -81,7 +81,7 @@ resultatet fra b), forklar hvorfor.
 
 Responstid testen
 
-    Rᵢⁿ⁺¹ = Cᵢ + ∑( ceil[Rᵢⁿ / Pᵤ] Cᵤ)
+    R(i;n+1) = C(i) + SUM( ceil[R(i;n) / P(i)] C(i))
 
     der summen er tatt over alle oppgaver u med
     høyere prioritet (dvs. kortere periode) enn i.

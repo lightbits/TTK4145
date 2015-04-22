@@ -10,6 +10,11 @@ Todo
 
 * Implement order timers - somehow. Perhaps set timer inside distributework?
 
+* Explicit acceptance test on network packets, among other
+    no unassigned orders (important! for backup takeover, always consistent state)
+
+* Move decode/encode functions into network?
+
 Done
 ----
 * Implement lift controller

@@ -19,7 +19,7 @@ inheritance
     M │    E V ^
     L │E Q ^
 
-Task H will be blocked at this point, since resource Q is already locked by task L.
+H vil bli blokkert her, siden Q er låst av L
 
        0 1 2 3 4 5 6 7 8 9 10 11 12
       ┌────────────────────────────
@@ -27,7 +27,20 @@ Task H will be blocked at this point, since resource Q is already locked by task
     M │    E V ^ V E
     L │E Q ^         Q Q E
 
-Does task H automatically pre-empt task L as soon as Q is released? Or does task H begin running after L finishes?
+Vil H automatisk preempte L straks Q løslates?
+Eller begynner H å kjøre etter L fullfører?
+
+SVAR: Etter å ha lest BW kapittel 11 tror jeg at
+H vil automatisk preempte L når L løslater Q.
+
+Altså blir diagrammet egentlig seendes ut slik:
+
+                 111
+       0123456789012
+      ┌─────────────
+    H │    E....QVE
+    M │  EV.VE
+    L │EQ.....QQ...E
 
 
 ──────────────────────────────────────────────────
@@ -35,7 +48,9 @@ Vis hvordan oppgavesettet kjører med priority
 inheritance
 ──────────────────────────────────────────────────
 
-When task H pre-empts L, but finds that it is blocked by L holding resource Q, L's priority will temporarily be set to H's priority.
+When task H pre-empts L, but finds that it is blocked
+by L holding resource Q, L's priority will temporarily
+be set to H's priority.
 
        0 1 2 3 4 5 6 7 8 9 10 11 12
       ┌────────────────────────────
@@ -107,7 +122,7 @@ Regel:
       - Prioriteten til T er høyere enn alle
         prioritet-tak til alle ressurser brukt av
         andre oppgaver på dette tidspunktet (disse
-        oppgavene _blokkerer_ T)
+        oppgavene _blokkerer_ T i motsatt tilfelle)
 
     Når oppgave blokkerer en annen, så arver den
     den høyeste av deres prioriteter.
