@@ -38,28 +38,32 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
     }
 
     for id, c := range(clients) {
-        target_floor := -1
-        current_pri  := -1
-        for index, order := range(orders) {
-            if order.TakenBy == id && order.Priority {
-                target_floor = order.Button.Floor
-                current_pri = index
-            }
-        }
+        PrioritizeOrdersForSingleLift(orders, id, c.LastPassedFloor)
+    }
+}
 
-        better_pri := -1
-        if target_floor >= 0 {
-            better_pri = closestOrderAlong(id, orders, c.LastPassedFloor, target_floor)
-        } else {
-            better_pri = closestOrderNear(id, orders, c.LastPassedFloor)
+func PrioritizeOrdersForSingleLift(orders []com.Order, id network.ID, last_passed_floor int) {
+    target_floor := -1
+    current_pri  := -1
+    for index, order := range(orders) {
+        if order.TakenBy == id && order.Priority {
+            target_floor = order.Button.Floor
+            current_pri = index
         }
+    }
 
-        if better_pri >= 0 {
-            if current_pri >= 0 {
-                orders[current_pri].Priority = false
-            }
-            orders[better_pri].Priority = true
+    better_pri := -1
+    if target_floor >= 0 {
+        better_pri = closestOrderAlong(id, orders, last_passed_floor, target_floor)
+    } else {
+        better_pri = closestOrderNear(id, orders, last_passed_floor)
+    }
+
+    if better_pri >= 0 {
+        if current_pri >= 0 {
+            orders[current_pri].Priority = false
         }
+        orders[better_pri].Priority = true
     }
 }
 

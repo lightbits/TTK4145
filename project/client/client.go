@@ -30,9 +30,6 @@ func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
             if button.Type == driver.ButtonOut {
                 // TODO: Add to order list
             }
-        case <- c.FloorReached:
-        case <- c.StopButton: // ignore
-        case <- c.Obstruction: // ignore
         }
 
     }
@@ -62,6 +59,7 @@ func RemoveAcknowledgedRequests(requests, orders []com.Order) []com.Order {
     return requests
 }
 
+// TODO: Pass LPF
 func ClientLoop(c com.Channels, master_id network.ID) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
     ORDER_DEADLINE_INTERVAL := 5 * driver.N_FLOORS * time.Second
