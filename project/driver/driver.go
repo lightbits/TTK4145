@@ -151,6 +151,7 @@ func SetFloorIndicator(floor int) {
 }
 
 func Init() {
+    fmt.Println("[DRIVER]\tInitializing")
     if (!io_init()) {
         log.Fatal("Failed to initialize driver")
     }

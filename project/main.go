@@ -1,11 +1,3 @@
-/*
-TODO:
-* Split up into modules: queue, client, master
-* Add timer that fires when a client has not performed his order in a while
-* Make client and master more clean
-* Implement WaitForMaster
-*/
-
 package main
 
 import (
@@ -16,6 +8,9 @@ import (
     "./com"
     "./client"
     "./master"
+    "os"
+    "os/signal"
+    "log"
 )
 
 func main() {
@@ -57,6 +52,15 @@ func main() {
         channels.CompletedFloor,
         channels.StopButton,
         channels.Obstruction)
+
+    // Handle ctrl+c :)
+    c := make(chan os.Signal)
+    signal.Notify(c, os.Interrupt)
+    go func() {
+        <- c
+        driver.MotorStop()
+        log.Fatal("[FATAL]\tUser terminated program")
+    }()
 
     if start_as_master {
         go network.MasterWorker(channels.FromClient, channels.ToClients)

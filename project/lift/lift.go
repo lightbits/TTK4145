@@ -2,9 +2,7 @@ package lift
 
 import (
     "time"
-    "log"
     "../driver"
-    "fmt"
 )
 
 func Init(
@@ -33,13 +31,11 @@ func Init(
         case <- door_timer.C:
             switch (state) {
                 case DoorOpen:
-                    // TODO: if lpf == tf, incase lift was dragged
-                    fmt.Println("[LIFT]\tCompleted floor @ DoorOpen")
                     completed_floor <- target_floor
                     driver.CloseDoor()
                     state = Idle
-                case Idle:    log.Println("Door closed @ Idle")
-                case Moving:  log.Println("Door closed @ Moving")
+                case Idle:    // Ignoring
+                case Moving:  // Ignoring
             }
 
         case floor := <- new_floor_order:
@@ -77,12 +73,12 @@ func Init(
                     } else if target_floor < floor {
                         driver.MotorDown()
                     }
-                case Idle:     log.Println("Reached floor @ Idle")
-                case DoorOpen: log.Println("Reached floor @ DoorOpen")
+                case Idle:     // Ignoring
+                case DoorOpen: // Ignoring
             }
 
-        case <- stop_button: // ignore
-        case <- obstruction: // ignore
+        case <- stop_button: // Ignoring
+        case <- obstruction: // Ignoring
         }
     }
 }
