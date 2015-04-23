@@ -68,5 +68,5 @@ func main() {
     }
 
     go network.ClientWorker(channels.FromMaster, channels.ToMaster)
-    client.WaitForMaster(channels, nil)
+    client.WaitForMaster(channels, nil, 0)
 }

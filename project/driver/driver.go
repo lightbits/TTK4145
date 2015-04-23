@@ -176,8 +176,6 @@ func Init() {
     MotorDown()
     for io_read_bit(SENSOR_FLOOR1) != 1 { }
     MotorStop()
-
-    fmt.Println("[DRIVER]\tInitialized")
 }
 
 func Poll(button_pressed chan OrderButton,
@@ -220,13 +218,10 @@ func Poll(button_pressed chan OrderButton,
             button_pressed <- OrderButton{e.bit, ButtonOut}
         case e := <-flr_ch:
             floor_reached <- e.bit
-            // floor_reached <- ReachedFloorEvent{e.bit}
         case e := <- stp_ch:
             stop_pressed <- e.is_set
-            // stop_pressed <- StopButtonEvent{e.is_set}
         case e := <- obs_ch:
             obstruction <- e.is_set
-            // obstruction <- ObstructionEvent{e.is_set}
         }
     }
 }

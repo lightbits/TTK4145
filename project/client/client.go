@@ -11,15 +11,49 @@ import (
     "log"
 )
 
-func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
+func WaitForMaster(c com.Channels, remaining_orders []com.Order, initial_floor int) {
     fmt.Println("[CLIENT]\tWaiting for master")
     time_to_ping := time.NewTicker(1*time.Second)
+    ORDER_DEADLINE_INTERVAL := 5 * driver.N_FLOORS * time.Second
+    order_deadline := time.NewTimer(ORDER_DEADLINE_INTERVAL)
+    order_deadline.Stop()
+
+    orders := remaining_orders
+    our_id := network.GetMachineID()
+
+    last_passed_floor := initial_floor
 
     for {
         select {
         case packet := <- c.FromMaster:
-            ClientLoop(c, packet.Address)
-            return
+            if len(orders) == 0 {
+                ClientLoop(c, packet.Address, last_passed_floor)
+                return
+            }
+
+        case <- order_deadline.C:
+            driver.MotorStop()
+            log.Fatal("[FATAL]\tFailed to complete order within deadline.")
+
+        case floor := <- c.CompletedFloor:
+            order_deadline.Stop()
+            for i := 0; i < len(orders); i++ {
+                if orders[i].TakenBy == our_id &&
+                   orders[i].Button.Floor == floor  {
+                    orders = append(orders[:i], orders[i+1:]...)
+                }
+            }
+            queue.PrioritizeOrdersForSingleLift(orders, our_id, last_passed_floor)
+            SetButtonLamps(orders, our_id)
+            for _, o := range(orders) {
+                if o.TakenBy == our_id && o.Priority {
+                    c.NewFloorOrder <- o.Button.Floor
+                    order_deadline.Reset(ORDER_DEADLINE_INTERVAL)
+                }
+            }
+
+        case floor := <- c.LastPassedFloorChanged:
+            last_passed_floor = floor
 
         case <- time_to_ping.C:
             c.ToMaster <- network.Packet {
@@ -28,7 +62,18 @@ func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
 
         case button := <- c.ButtonPressed:
             if button.Type == driver.ButtonOut {
-                // TODO: Add to order list
+                orders = append(orders, com.Order {
+                    Button:  button,
+                    TakenBy: our_id,
+                })
+                queue.PrioritizeOrdersForSingleLift(orders, our_id, last_passed_floor)
+                SetButtonLamps(orders, our_id)
+                for _, o := range(orders) {
+                    if o.TakenBy == our_id && o.Priority {
+                        c.NewFloorOrder <- o.Button.Floor
+                        order_deadline.Reset(ORDER_DEADLINE_INTERVAL)
+                    }
+                }
             }
         }
 
@@ -87,7 +132,13 @@ func SetButtonLamps(orders []com.Order, our_id network.ID) {
 
 func GetPriority(orders, requests []com.Order, our_id network.ID) int {
     for _, o := range(orders) {
-        if o.TakenBy == our_id && o.Priority {
+        already_done := false
+        for _, r := range(requests) {
+            if queue.IsSameOrder(o, r) && r.Done {
+                already_done = true
+            }
+        }
+        if !already_done && (o.TakenBy == our_id && o.Priority) {
             return o.Button.Floor
         }
     }
@@ -95,7 +146,7 @@ func GetPriority(orders, requests []com.Order, our_id network.ID) int {
 }
 
 // TODO: Pass LPF
-func ClientLoop(c com.Channels, master_id network.ID) {
+func ClientLoop(c com.Channels, master_id network.ID, initial_floor int) {
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
     ORDER_DEADLINE_INTERVAL := 5 * driver.N_FLOORS * time.Second
     SEND_INTERVAL := 250 * time.Millisecond
@@ -111,7 +162,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
     requests := make([]com.Order, 0) // Unacknowledged local com
 
     our_id := network.GetMachineID()
-    last_passed_floor := 0
+    last_passed_floor := initial_floor
     is_backup := false
 
     target_floor := driver.INVALID_FLOOR
@@ -124,6 +175,9 @@ func ClientLoop(c com.Channels, master_id network.ID) {
                 fmt.Println("[CLIENT]\tMaster timed out; taking over!")
                 go network.MasterWorker(c.FromClient, c.ToClients)
                 go master.WaitForBackup(c, orders, clients)
+            } else {
+                WaitForMaster(c, orders, last_passed_floor)
+                return
             }
 
         case <- order_deadline.C:

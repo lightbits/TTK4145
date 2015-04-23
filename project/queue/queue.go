@@ -43,7 +43,7 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
 }
 
 func PrioritizeOrdersForSingleLift(orders []com.Order, id network.ID, last_passed_floor int) {
-    target_floor := -1
+    target_floor := driver.INVALID_FLOOR
     current_pri  := -1
     for index, order := range(orders) {
         if order.TakenBy == id && order.Priority {
@@ -53,7 +53,7 @@ func PrioritizeOrdersForSingleLift(orders []com.Order, id network.ID, last_passe
     }
 
     better_pri := -1
-    if target_floor >= 0 {
+    if target_floor != driver.INVALID_FLOOR {
         better_pri = closestOrderAlong(id, orders, last_passed_floor, target_floor)
     } else {
         better_pri = closestOrderNear(id, orders, last_passed_floor)

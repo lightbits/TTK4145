@@ -13,7 +13,9 @@ Todo
 
 * Move decode/encode functions into network?
 
-* Test on lab
+* Split up com.Channels into MasterEvents, ClientEvents, etc... only pass necessary args
+* Should we get rid of LastPassedFloorChanged?
+* Better printing
 
 Done
 ----
