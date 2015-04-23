@@ -63,15 +63,6 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
     }
 }
 
-func RemoveExternalAssignments(orders []com.Order, who network.ID) {
-    for i, o := range(orders) {
-        if o.TakenBy == who && o.Button.Type != driver.ButtonOut {
-            o.TakenBy = network.InvalidID
-            orders[i] = o
-        }
-    }
-}
-
 func distanceSqrd(a, b int) int {
     return (a - b) * (a - b)
 }

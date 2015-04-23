@@ -96,6 +96,8 @@ func ClientLoop(c com.Channels, master_id network.ID) {
             }
 
         case <- order_deadline.C:
+            driver.MotorStop()
+            // restart program?
             log.Fatal("[FATAL]\tFailed to complete order within deadline.")
 
         case <- time_to_send.C:

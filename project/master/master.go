@@ -67,6 +67,15 @@ func DeleteDoneOrders(requests, orders []com.Order) []com.Order {
     return orders
 }
 
+func RemoveExternalAssignments(orders []com.Order, who network.ID) {
+    for i, o := range(orders) {
+        if o.TakenBy == who && o.Button.Type != driver.ButtonOut {
+            o.TakenBy = network.InvalidID
+            orders[i] = o
+        }
+    }
+}
+
 func MasterLoop(c               com.Channels,
                 backup          network.ID,
                 initial_queue   []com.Order,
@@ -138,7 +147,7 @@ func MasterLoop(c               com.Channels,
             fmt.Println("[MASTER]\tClient", who, "timed out")
             client, exists := clients[who]
             if exists {
-                queue.RemoveExternalAssignments(orders, who)
+                RemoveExternalAssignments(orders, who)
                 client.HasTimedOut = true
                 clients[who] = client
             }
