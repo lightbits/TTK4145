@@ -79,7 +79,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
     last_passed_floor := 0
     is_backup := false
 
-    target_floor := 0
+    target_floor := driver.INVALID_FLOOR
 
     fmt.Println("[CLIENT]\tStarting client")
     for {
@@ -134,6 +134,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
                 break
             }
             fmt.Println("[CLIENT]\tMaster said", data)
+            clients = data.Clients
 
             if data.AssignedBackup == our_id {
                 is_backup = true
