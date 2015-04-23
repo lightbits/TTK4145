@@ -14,7 +14,7 @@ Todo
 * Move decode/encode functions into network?
 
 * Split up com.Channels into MasterEvents, ClientEvents, etc... only pass necessary args
-* Should we get rid of LastPassedFloorChanged?
+* Should we get rid of LastPassedFloorChanged? F.eks. lift.GetLastPassedFloor() instead?
 * Better printing
 
 Done

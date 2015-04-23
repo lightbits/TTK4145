@@ -4,7 +4,7 @@ import (
     "../queue"
     "../com"
     "../network"
-    "../driver"
+    "../fakedriver"
     "fmt"
     "time"
 )
@@ -20,14 +20,15 @@ func WaitForBackup(c               com.Channels,
         select {
         case packet := <- c.FromClient:
             // DEBUG:
-            // MasterLoop(c, packet.Address, initial_queue, initial_clients)
+            MasterLoop(c, packet.Address, initial_queue, initial_clients)
+            return
 
-            if packet.Address != machine_id {
-                MasterLoop(c, packet.Address, initial_queue, initial_clients)
-                return
-            } else {
-                fmt.Println("[MASTER]\tCannot use own machine as backup client")
-            }
+            // if packet.Address != machine_id {
+            //     MasterLoop(c, packet.Address, initial_queue, initial_clients)
+            //     return
+            // } else {
+            //     fmt.Println("[MASTER]\tCannot use own machine as backup client")
+            // }
         }
     }
 }

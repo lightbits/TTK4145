@@ -2,7 +2,7 @@ package queue
 
 import (
     "log"
-    "../driver"
+    "../fakedriver"
     "../network"
     "../com"
 )
@@ -19,6 +19,15 @@ func IsNewOrder(request com.Order, orders []com.Order) bool {
         }
     }
     return true
+}
+
+func GetPriority(orders []com.Order, id network.ID) int {
+    for _, o := range(orders) {
+        if o.TakenBy == id && o.Priority {
+            return o.Button.Floor
+        }
+    }
+    return driver.INVALID_FLOOR
 }
 
 func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {

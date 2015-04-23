@@ -4,7 +4,7 @@ import (
     "flag"
     "./lift"
     "./network"
-    "./driver"
+    "./fakedriver"
     "./com"
     "./client"
     "./master"
@@ -21,9 +21,10 @@ func main() {
     var channels com.Channels
 
     // Lift events
-    channels.LastPassedFloorChanged = make(chan int)
-    channels.NewFloorOrder          = make(chan int)
-    channels.CompletedFloor         = make(chan int)
+    channels.NewFloorOrder  = make(chan int)
+    channels.CompletedFloor = make(chan int)
+    channels.MissedDeadline = make(chan bool)
+    channels.NewOrders      = make(chan []com.Order)
 
     // Driver events
     channels.ButtonPressed  = make(chan driver.OrderButton)
@@ -47,9 +48,9 @@ func main() {
 
     go lift.Init(
         channels.FloorReached,
-        channels.LastPassedFloorChanged,
-        channels.NewFloorOrder,
         channels.CompletedFloor,
+        channels.NewOrders,
+        channels.MissedDeadline,
         channels.StopButton,
         channels.Obstruction)
 
@@ -68,5 +69,5 @@ func main() {
     }
 
     go network.ClientWorker(channels.FromMaster, channels.ToMaster)
-    client.WaitForMaster(channels, nil, 0)
+    client.WaitForMaster(channels, nil)
 }

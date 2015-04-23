@@ -1,7 +1,7 @@
 package com
 
 import (
-    "../driver"
+    "../fakedriver"
     "../network"
     "time"
     "encoding/json"
@@ -61,11 +61,38 @@ func EncodeClientData(c ClientData) []byte {
     return result
 }
 
-type Channels struct {
-    // Lift events
+/*
+TODO:
+type LiftEvents struct {
     LastPassedFloorChanged chan int
     NewFloorOrder          chan int
     CompletedFloor         chan int
+    MissedDeadline         chan bool
+}
+
+type DriverEvents struct {
+    ButtonPressed  chan driver.OrderButton
+    FloorReached   chan int
+    StopButton     chan bool
+    Obstruction    chan bool
+}
+
+// Only one, since the client needs both types!
+type NetworkEvents {
+    ToMaster   chan network.Packet
+    FromMaster chan network.Packet
+    ToClients  chan network.Packet
+    FromClient chan network.Packet
+}
+
+*/
+
+type Channels struct {
+    // Lift events
+    NewFloorOrder  chan int
+    CompletedFloor chan int
+    MissedDeadline chan bool
+    NewOrders      chan []Order
 
     // Driver events
     ButtonPressed  chan driver.OrderButton
