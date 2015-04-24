@@ -18,41 +18,46 @@ func main() {
     flag.BoolVar(&start_as_master, "master", false, "Start as master")
     flag.Parse()
 
-    var channels com.Channels
+    var lift_events com.LiftEvents
+    lift_events.NewOrders      = make(chan []com.Order)
+    lift_events.FloorReached   = make(chan int)
+    lift_events.StopButton     = make(chan bool)
+    lift_events.Obstruction    = make(chan bool)
 
-    // Lift events
-    channels.NewFloorOrder  = make(chan int)
-    channels.CompletedFloor = make(chan int)
-    channels.MissedDeadline = make(chan bool)
-    channels.NewOrders      = make(chan []com.Order)
+    var client_events com.ClientEvents
+    client_events.CompletedFloor = make(chan int)
+    client_events.MissedDeadline = make(chan bool)
+    client_events.ButtonPressed  = make(chan driver.OrderButton)
+    client_events.ToMaster       = make(chan network.Packet)
+    client_events.FromMaster     = make(chan network.Packet)
 
-    // Driver events
-    channels.ButtonPressed  = make(chan driver.OrderButton)
-    channels.FloorReached   = make(chan int)
-    channels.StopButton     = make(chan bool)
-    channels.Obstruction    = make(chan bool)
-
-    // Network events
-    channels.ToMaster       = make(chan network.Packet)
-    channels.ToClients      = make(chan network.Packet)
-    channels.FromMaster     = make(chan network.Packet)
-    channels.FromClient     = make(chan network.Packet)
+    var master_events com.MasterEvents
+    master_events.ToClients  = make(chan network.Packet)
+    master_events.FromClient = make(chan network.Packet)
 
     driver.Init()
 
     go driver.Poll(
-        channels.ButtonPressed,
-        channels.FloorReached,
-        channels.StopButton,
-        channels.Obstruction)
+        client_events.ButtonPressed,
+        lift_events.FloorReached,
+        lift_events.StopButton,
+        lift_events.Obstruction)
 
     go lift.Init(
-        channels.FloorReached,
-        channels.CompletedFloor,
-        channels.NewOrders,
-        channels.MissedDeadline,
-        channels.StopButton,
-        channels.Obstruction)
+        client_events.CompletedFloor,
+        client_events.MissedDeadline,
+        lift_events.FloorReached,
+        lift_events.NewOrders,
+        lift_events.StopButton,
+        lift_events.Obstruction)
+
+    go network.MasterWorker(
+        master_events.FromClient,
+        master_events.ToClients)
+
+    go network.ClientWorker(
+        client_events.FromMaster,
+        client_events.ToMaster)
 
     // Handle ctrl+c :)
     c := make(chan os.Signal)
@@ -64,10 +69,8 @@ func main() {
     }()
 
     if start_as_master {
-        go network.MasterWorker(channels.FromClient, channels.ToClients)
-        go master.WaitForBackup(channels, nil, nil)
+        go master.WaitForBackup(master_events, nil, nil)
     }
 
-    go network.ClientWorker(channels.FromMaster, channels.ToMaster)
-    client.WaitForMaster(channels, nil)
+    client.WaitForMaster(client_events, master_events, lift_events, nil)
 }

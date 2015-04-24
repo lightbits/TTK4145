@@ -16,10 +16,10 @@ func GetLastPassedFloor() int {
 }
 
 func Init(
-    floor_reached   chan int,
     completed_floor chan int,
-    new_orders      chan []com.Order,
     missed_deadline chan bool,
+    floor_reached   chan int,
+    new_orders      chan []com.Order,
     stop_button     chan bool,
     obstruction     chan bool) {
 

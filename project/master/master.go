@@ -9,7 +9,7 @@ import (
     "time"
 )
 
-func WaitForBackup(c               com.Channels,
+func WaitForBackup(events          com.MasterEvents,
                    initial_queue   []com.Order,
                    initial_clients map[network.ID]com.Client) {
 
@@ -17,9 +17,9 @@ func WaitForBackup(c               com.Channels,
     println(logger.Info, "Running on machine", machine_id)
     for {
         select {
-        case packet := <- c.FromClient:
+        case packet := <- events.FromClient:
             // DEBUG:
-            MasterLoop(c, packet.Address, initial_queue, initial_clients)
+            MasterLoop(events, packet.Address, initial_queue, initial_clients)
             return
 
             // if packet.Address != machine_id {
@@ -76,7 +76,7 @@ func RemoveExternalAssignments(orders []com.Order, who network.ID) {
     }
 }
 
-func MasterLoop(c               com.Channels,
+func MasterLoop(events          com.MasterEvents,
                 backup          network.ID,
                 initial_queue   []com.Order,
                 initial_clients map[network.ID]com.Client) {
@@ -104,7 +104,7 @@ func MasterLoop(c               com.Channels,
     println(logger.Info, "Starting with backup", backup)
     for {
         select {
-        case packet := <- c.FromClient:
+        case packet := <- events.FromClient:
             data, err := com.DecodeClientPacket(packet.Data)
             if err != nil {
                 break
@@ -139,7 +139,7 @@ func MasterLoop(c               com.Channels,
                 Orders:         orders,
                 Clients:        clients,
             }
-            c.ToClients <- network.Packet {
+            events.ToClients <- network.Packet {
                 Data: com.EncodeMasterData(data),
             }
 
@@ -152,7 +152,7 @@ func MasterLoop(c               com.Channels,
                 clients[who] = client
             }
             if who == backup {
-                WaitForBackup(c, orders, clients)
+                WaitForBackup(events, orders, clients)
             }
         }
     }

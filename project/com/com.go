@@ -61,50 +61,22 @@ func EncodeClientData(c ClientData) []byte {
     return result
 }
 
-/*
-TODO:
 type LiftEvents struct {
-    LastPassedFloorChanged chan int
-    NewFloorOrder          chan int
-    CompletedFloor         chan int
-    MissedDeadline         chan bool
+    FloorReached    chan int
+    NewOrders       chan []Order
+    StopButton      chan bool
+    Obstruction     chan bool
 }
 
-type DriverEvents struct {
-    ButtonPressed  chan driver.OrderButton
-    FloorReached   chan int
-    StopButton     chan bool
-    Obstruction    chan bool
-}
-
-// Only one, since the client needs both types!
-type NetworkEvents {
-    ToMaster   chan network.Packet
-    FromMaster chan network.Packet
-    ToClients  chan network.Packet
-    FromClient chan network.Packet
-}
-
-*/
-
-type Channels struct {
-    // Lift events
-    NewFloorOrder  chan int
+type ClientEvents struct {
     CompletedFloor chan int
     MissedDeadline chan bool
-    NewOrders      chan []Order
-
-    // Driver events
     ButtonPressed  chan driver.OrderButton
-    FloorReached   chan int
-    StopButton     chan bool
-    Obstruction    chan bool
-
-    // Network events (client-side)
-    ToMaster       chan network.Packet
     FromMaster     chan network.Packet
+    ToMaster       chan network.Packet
+}
 
-    // Network events (master-side)
-    ToClients      chan network.Packet
-    FromClient     chan network.Packet
+type MasterEvents struct {
+    ToClients  chan network.Packet
+    FromClient chan network.Packet
 }
