@@ -1,9 +1,8 @@
 package driver
 
 import (
-    "log"
+    "../logger"
     "time"
-    "fmt"
 )
 
 type ButtonType int
@@ -74,19 +73,19 @@ func MotorStop() {
 func SetButtonLamp(btn OrderButton, set bool) {
     lights := up_lights
     if btn.Floor >= N_FLOORS {
-        log.Fatal("Tried to set light on non-existent floor")
+        println(logger.Info, "Tried to set light on non-existent floor")
     }
 
     switch btn.Type {
     case ButtonUp:
         lights = up_lights
         if btn.Floor >= N_FLOORS - 1 {
-            log.Fatal("Tried to set light on non-existent floor")
+            println(logger.Info, "Tried to set light on non-existent floor")
         }
     case ButtonDown:
         lights = down_lights
         if btn.Floor == 0 {
-            log.Fatal("Tried to set light on non-existent floor")
+            println(logger.Info, "Tried to set light on non-existent floor")
         }
     case ButtonOut:
         lights = out_lights
@@ -151,9 +150,9 @@ func SetFloorIndicator(floor int) {
 }
 
 func Init() {
-    fmt.Println("[DRIVER]\tInitializing")
+    println(logger.Info, "Initializing driver")
     if (!io_init()) {
-        log.Fatal("Failed to initialize driver")
+        println(logger.Fatal, "Failed to initialize driver")
     }
 
     // Zero all floor button lamps
@@ -224,4 +223,8 @@ func Poll(button_pressed chan OrderButton,
             obstruction <- e.is_set
         }
     }
+}
+
+func println(level logger.Level, args...interface{}) {
+    logger.Println(level, "DRIVER", args...)
 }

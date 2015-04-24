@@ -5,7 +5,7 @@ import (
     "../com"
     "../network"
     "../fakedriver"
-    "fmt"
+    "../logger"
     "time"
 )
 
@@ -14,8 +14,7 @@ func WaitForBackup(c               com.Channels,
                    initial_clients map[network.ID]com.Client) {
 
     machine_id := network.GetMachineID()
-    fmt.Println("[MASTER]\tRunning on machine", machine_id)
-    fmt.Println("[MASTER]\tWaiting for backup...")
+    println(logger.Info, "Running on machine", machine_id)
     for {
         select {
         case packet := <- c.FromClient:
@@ -102,21 +101,20 @@ func MasterLoop(c               com.Channels,
         }
     }
 
-    fmt.Println("[MASTER]\tStarting master with backup", backup)
+    println(logger.Info, "Starting with backup", backup)
     for {
         select {
         case packet := <- c.FromClient:
-
             data, err := com.DecodeClientPacket(packet.Data)
             if err != nil {
                 break
             }
-            fmt.Println("[MASTER]\tClient said", data)
+            println(logger.Debug, "Client said", data)
 
             sender_id := packet.Address
             client, exists := clients[sender_id]
             if !exists {
-                fmt.Println("[MASTER]\tAdding new client", sender_id)
+                println(logger.Info, "Adding new client", sender_id)
                 alive_timer := time.NewTimer(TIMEOUT_INTERVAL)
                 client = com.Client {
                     ID: sender_id,
@@ -134,6 +132,7 @@ func MasterLoop(c               com.Channels,
 
 
         case <- time_to_send.C:
+            println(logger.Debug, "Sending to clients")
             queue.DistributeWork(clients, orders)
             data := com.MasterData {
                 AssignedBackup: backup,
@@ -145,7 +144,7 @@ func MasterLoop(c               com.Channels,
             }
 
         case who := <- client_timed_out:
-            fmt.Println("[MASTER]\tClient", who, "timed out")
+            println(logger.Info, who, "timed out")
             client, exists := clients[who]
             if exists {
                 RemoveExternalAssignments(orders, who)
@@ -157,4 +156,8 @@ func MasterLoop(c               com.Channels,
             }
         }
     }
+}
+
+func println(level logger.Level, args...interface{}) {
+    logger.Println(level, "MASTER", args...)
 }

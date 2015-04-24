@@ -2,7 +2,7 @@ package driver
 
 import (
     "time"
-    "fmt"
+    "../logger"
 )
 
 const N_FLOORS = 4
@@ -52,7 +52,7 @@ func SetFloorIndicator(floor int) {
 }
 
 func Init() {
-    fmt.Println("[DRVR]\tInitialized")
+    println(logger.Info, "Initialized")
 }
 
 func Poll(button_pressed chan OrderButton,
@@ -75,4 +75,8 @@ func Poll(button_pressed chan OrderButton,
         floor_reached <- 4
         break
     }
+}
+
+func println(level logger.Level, args...interface{}) {
+    logger.Println(level, "DRIVER", args...)
 }

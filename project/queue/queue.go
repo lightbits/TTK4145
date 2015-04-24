@@ -1,7 +1,6 @@
 package queue
 
 import (
-    "log"
     "../fakedriver"
     "../network"
     "../com"
@@ -31,6 +30,10 @@ func GetPriority(orders []com.Order, id network.ID) int {
 }
 
 func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
+    if len(clients) == 0 {
+        return
+    }
+
     // Distribute to closest lift
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
@@ -38,9 +41,6 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
             clients[o.TakenBy].HasTimedOut) {
 
             closest := closestActiveLift(clients, o.Button.Floor)
-            if closest == network.InvalidID {
-                log.Fatal("Cannot distribute work when there are no lifts!")
-            }
             o.TakenBy = closest
             orders[i] = o
         }

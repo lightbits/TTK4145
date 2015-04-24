@@ -7,13 +7,12 @@ import (
     "../com"
     "../master"
     "../lift"
+    "../logger"
     "time"
-    "fmt"
-    "log"
 )
 
 func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
-    fmt.Println("[CLIENT]\tWaiting for master")
+    println(logger.Info, "Waiting for master")
     time_to_ping := time.NewTicker(1*time.Second)
 
     orders := remaining_orders
@@ -22,6 +21,7 @@ func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
     for {
         select {
         case packet := <- c.FromMaster:
+            println(logger.Debug, "Heard from a master")
             if len(orders) == 0 {
                 ClientLoop(c, packet.Address)
                 return
@@ -29,9 +29,10 @@ func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
 
         case <- c.MissedDeadline:
             driver.MotorStop()
-            log.Fatal("[FATAL]\tFailed to complete order within deadline.")
+            println(logger.Fatal, "Failed to complete order within deadline")
 
         case floor := <- c.CompletedFloor:
+            println(logger.Info, "Completed floor", floor)
             for i := 0; i < len(orders); i++ {
                 if orders[i].TakenBy == our_id &&
                    orders[i].Button.Floor == floor  {
@@ -43,11 +44,16 @@ func WaitForMaster(c com.Channels, remaining_orders []com.Order) {
             c.NewOrders <- orders
 
         case <- time_to_ping.C:
+            println(logger.Debug, "Pinging")
+            data := com.ClientData {
+                LastPassedFloor: lift.GetLastPassedFloor(),
+            }
             c.ToMaster <- network.Packet {
-                Data: []byte("Ping"),
+                Data: com.EncodeClientData(data),
             }
 
         case button := <- c.ButtonPressed:
+            println(logger.Info, "Button pressed", button)
             if button.Type == driver.ButtonOut {
                 orders = append(orders, com.Order {
                     Button:  button,
@@ -110,12 +116,12 @@ func ClientLoop(c com.Channels, master_id network.ID) {
     our_id := network.GetMachineID()
     is_backup := false
 
-    fmt.Println("[CLIENT]\tStarting client")
+    println(logger.Info, "Starting client with master", master_id)
     for {
         select {
         case <- master_timeout.C:
             if is_backup {
-                fmt.Println("[CLIENT]\tMaster timed out; taking over!")
+                println(logger.Info, "Master timed out, taking over!")
                 go network.MasterWorker(c.FromClient, c.ToClients)
                 go master.WaitForBackup(c, orders, clients)
             } else {
@@ -125,7 +131,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
 
         case <- c.MissedDeadline:
             driver.MotorStop()
-            log.Fatal("[FATAL]\tFailed to complete order within deadline.")
+            println(logger.Fatal, "Failed to complete order within deadline")
 
         case <- time_to_send.C:
             data := com.ClientData {
@@ -137,11 +143,13 @@ func ClientLoop(c com.Channels, master_id network.ID) {
             }
 
         case button := <- c.ButtonPressed:
+            println(logger.Info, "Button pressed", button)
             requests = append(requests, com.Order {
                 Button: button,
             })
 
         case floor := <- c.CompletedFloor:
+            println(logger.Info, "Completed floor", floor)
             for _, o := range(orders) {
                 if o.TakenBy == our_id && o.Button.Floor == floor {
                     o.Done = true
@@ -155,7 +163,7 @@ func ClientLoop(c com.Channels, master_id network.ID) {
             if err != nil {
                 break
             }
-            fmt.Println("[CLIENT]\tMaster said", data)
+            println(logger.Debug, "Master said", data)
             clients = data.Clients
             orders = data.Orders
             is_backup = data.AssignedBackup == our_id
@@ -164,4 +172,8 @@ func ClientLoop(c com.Channels, master_id network.ID) {
             requests = RemoveAcknowledgedRequests(requests, orders)
         }
     }
+}
+
+func println(level logger.Level, args...interface{}) {
+    logger.Println(level, "CLIENT", args...)
 }
