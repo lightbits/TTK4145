@@ -14,7 +14,7 @@ const (
     Fatal
 )
 
-const log_level Level = Debug
+const log_level Level = Info
 const module_filter = ""
 
 func Println(level Level, module string, args...interface{}) {

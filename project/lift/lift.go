@@ -48,6 +48,7 @@ func Init(
                     state = Idle
                     completed_floor <- target_floor
                     target_floor = driver.INVALID_FLOOR
+                    deadline_timer.Stop()
                 case Idle:    println(logger.Debug, "Door timer @ Idle")
                 case Moving:  println(logger.Debug, "Door timer @ Moving")
             }
@@ -57,6 +58,7 @@ func Init(
 
         case floor := <- new_target_floor:
             target_floor = floor
+            deadline_timer.Reset(ORDER_DEADLINE_INTERVAL)
             switch (state) {
                 case Idle:
                     println(logger.Info, "New order @ Idle")
