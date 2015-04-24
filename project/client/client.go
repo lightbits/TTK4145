@@ -18,7 +18,7 @@ func IsSameOrderList(A, B []com.Order) bool {
     for _, a := range(A) {
         exists := false
         for _, b := range(B) {
-            if queue.IsSameOrder(a, b) && a.Done == b.Done {
+            if queue.IsSameOrder(a, b) && a.Done == b.Done && a.TakenBy == b.TakenBy {
                 exists = true
             }
         }
@@ -34,11 +34,16 @@ func WaitForMaster(events           com.ClientEvents,
                    lift_events      com.LiftEvents,
                    remaining_orders []com.Order) {
 
-    println(logger.Info, "Waiting for master")
+    println(logger.Info, "Waiting for master, Hello Sailor!")
     time_to_ping := time.NewTicker(1*time.Second)
 
-    orders := remaining_orders
     our_id := network.GetMachineID()
+    orders := make([]com.Order, 0)
+    for _, o := range(remaining_orders) {
+        if o.TakenBy == our_id {
+            orders = append(orders, o)
+        }
+    }
 
     for {
         select {

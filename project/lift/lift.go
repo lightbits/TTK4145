@@ -47,11 +47,24 @@ func Init(
             switch (state) {
                 case DoorOpen:
                     println(logger.Info, "Door timer @ DoorOpen")
-                    completed_floor <- target_floor
-                    target_floor = driver.INVALID_FLOOR
-                    deadline_timer.Stop()
                     driver.CloseDoor()
                     state = Idle
+                    if target_floor == driver.INVALID_FLOOR {
+                        break
+                    } else if target_floor > last_passed_floor {
+                        state = Moving
+                        driver.MotorUp()
+                    } else if target_floor < last_passed_floor {
+                        state = Moving
+                        driver.MotorDown()
+                    } else {
+                        door_timer.Reset(3 * time.Second)
+                        driver.OpenDoor()
+                        state = DoorOpen
+                        completed_floor <- target_floor
+                        deadline_timer.Stop()
+                        target_floor = driver.INVALID_FLOOR
+                    }
                 case Idle:    println(logger.Debug, "Door timer @ Idle")
                 case Moving:  println(logger.Debug, "Door timer @ Moving")
             }
@@ -82,6 +95,9 @@ func Init(
                         door_timer.Reset(3 * time.Second)
                         driver.OpenDoor()
                         state = DoorOpen
+                        completed_floor <- target_floor
+                        deadline_timer.Stop()
+                        target_floor = driver.INVALID_FLOOR
                     }
                 case Moving:   println(logger.Debug, "New orders @ Moving")
                 case DoorOpen: println(logger.Debug, "New orders @ DoorOpen")
@@ -98,6 +114,9 @@ func Init(
                         driver.MotorStop()
                         driver.OpenDoor()
                         state = DoorOpen
+                        completed_floor <- target_floor
+                        deadline_timer.Stop()
+                        target_floor = driver.INVALID_FLOOR
                     } else if target_floor > floor {
                         driver.MotorUp()
                     } else if target_floor < floor {

@@ -51,10 +51,6 @@ func main() {
         lift_events.StopButton,
         lift_events.Obstruction)
 
-    go network.MasterWorker(
-        master_events.FromClient,
-        master_events.ToClients)
-
     go network.ClientWorker(
         client_events.FromMaster,
         client_events.ToMaster)

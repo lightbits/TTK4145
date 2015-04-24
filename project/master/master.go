@@ -14,7 +14,10 @@ func WaitForBackup(events          com.MasterEvents,
                    initial_clients map[network.ID]com.Client) {
 
     machine_id := network.GetMachineID()
+    go network.MasterWorker(events.FromClient, events.ToClients)
     println(logger.Info, "Waiting for backup on machine", machine_id)
+    println(logger.Info, "Initial queue:", initial_queue)
+    println(logger.Info, "Initial clients:", initial_clients)
     for {
         select {
         case packet := <- events.FromClient:
@@ -37,9 +40,11 @@ func WaitForBackup(events          com.MasterEvents,
 }
 
 func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan network.ID) {
-    select {
-    case <- timer.C:
-        timeout <- id
+    for {
+        select {
+        case <- timer.C:
+            timeout <- id
+        }
     }
 }
 
@@ -126,6 +131,7 @@ func MasterLoop(events          com.MasterEvents,
                 }
                 go ListenForClientTimeout(sender_id, alive_timer, client_timed_out)
             }
+            println(logger.Debug, "Resetting", packet.Address, "'s timer")
             client.AliveTimer.Reset(TIMEOUT_INTERVAL)
             client.HasTimedOut = false
             client.LastPassedFloor = data.LastPassedFloor
