@@ -51,9 +51,6 @@ func main() {
         lift_events.StopButton,
         lift_events.Obstruction)
 
-    go network.ClientWorker(
-        client_events.FromMaster,
-        client_events.ToMaster)
 
     // Handle ctrl+c :)
     c := make(chan os.Signal)
@@ -65,8 +62,10 @@ func main() {
     }()
 
     if start_as_master {
+        go network.MasterWorker(master_events.FromClient, master_events.ToClients)
         go master.WaitForBackup(master_events, nil, nil)
     }
 
+    go network.ClientWorker(client_events.FromMaster, client_events.ToMaster)
     client.WaitForMaster(client_events, master_events, lift_events, nil)
 }

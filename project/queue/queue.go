@@ -4,6 +4,7 @@ import (
     "../fakedriver"
     "../network"
     "../com"
+    "fmt"
 )
 
 func IsSameOrder(a, b com.Order) bool {
@@ -38,12 +39,7 @@ func GetPriority(orders []com.Order, id network.ID) *com.Order {
     return nil
 }
 
-func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
-    if len(clients) == 0 {
-        // ASSERT that this does not happen!
-        return
-    }
-
+func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) error {
     // Distribute to closest lift
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
@@ -51,6 +47,9 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
             clients[o.TakenBy].HasTimedOut) {
 
             closest := closestActiveLift(clients, o.Button.Floor)
+            if closest == network.InvalidID {
+                return fmt.Errorf("Failed to distribute order; No active lifts")
+            }
             o.TakenBy = closest
             orders[i] = o
         }
@@ -59,6 +58,7 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
     for id, c := range(clients) {
         PrioritizeOrdersForSingleLift(orders, id, c.LastPassedFloor)
     }
+    return nil
 }
 
 func PrioritizeOrdersForSingleLift(orders []com.Order, id network.ID, last_passed_floor int) {

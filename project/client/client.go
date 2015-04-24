@@ -160,6 +160,7 @@ func ClientLoop(events          com.ClientEvents,
             println(logger.Info, "Master timed out")
             if is_backup {
                 println(logger.Info, "Taking over")
+                go network.MasterWorker(master_events.FromClient, master_events.ToClients)
                 go master.WaitForBackup(master_events, orders, clients)
             } else {
                 WaitForMaster(events, master_events, lift_events, orders)

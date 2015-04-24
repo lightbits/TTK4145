@@ -14,7 +14,6 @@ func WaitForBackup(events          com.MasterEvents,
                    initial_clients map[network.ID]com.Client) {
 
     machine_id := network.GetMachineID()
-    go network.MasterWorker(events.FromClient, events.ToClients)
     println(logger.Info, "Waiting for backup on machine", machine_id)
     println(logger.Info, "Initial queue:", initial_queue)
     println(logger.Info, "Initial clients:", initial_clients)
@@ -160,6 +159,10 @@ func MasterLoop(events          com.MasterEvents,
                 RemoveExternalAssignments(orders, who)
                 client.HasTimedOut = true
                 clients[who] = client
+                err := queue.DistributeWork(clients, orders)
+                if err != nil {
+                    println(logger.Fatal, err)
+                }
             }
             if who == backup {
                 WaitForBackup(events, orders, clients)
