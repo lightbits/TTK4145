@@ -57,8 +57,10 @@ func Init(
             missed_deadline <- true
 
         case floor := <- new_target_floor:
+            if target_floor != floor {
+                deadline_timer.Reset(ORDER_DEADLINE_INTERVAL)
+            }
             target_floor = floor
-            deadline_timer.Reset(ORDER_DEADLINE_INTERVAL)
             switch (state) {
                 case Idle:
                     println(logger.Info, "New order @ Idle")

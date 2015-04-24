@@ -162,6 +162,8 @@ func ClientLoop(events          com.ClientEvents,
                 println(logger.Info, "Taking over")
                 go network.MasterWorker(master_events.FromClient, master_events.ToClients)
                 go master.WaitForBackup(master_events, orders, clients)
+                WaitForMaster(events, master_events, lift_events, orders)
+                return
             } else {
                 WaitForMaster(events, master_events, lift_events, orders)
                 return
