@@ -68,8 +68,10 @@ func WaitForMaster(events           com.ClientEvents,
             }
             queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
             SetButtonLamps(orders, our_id)
-            println(logger.Info, "Giving new orders", orders)
-            lift_events.NewOrders <- orders
+            priority := queue.GetPriority(orders, our_id)
+            if priority != nil {
+                lift_events.NewTargetFloor <- priority.Button.Floor
+            }
 
         case <- time_to_ping.C:
             println(logger.Debug, "Pinging")
@@ -89,7 +91,10 @@ func WaitForMaster(events           com.ClientEvents,
                 })
                 queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
                 SetButtonLamps(orders, our_id)
-                lift_events.NewOrders <- orders
+                priority := queue.GetPriority(orders, our_id)
+                if priority != nil {
+                    lift_events.NewTargetFloor <- priority.Button.Floor
+                }
             }
         }
 
@@ -204,7 +209,12 @@ func ClientLoop(events          com.ClientEvents,
             orders = data.Orders
             is_backup = data.AssignedBackup == our_id
             SetButtonLamps(orders, our_id)
-            lift_events.NewOrders <- orders
+
+            priority := queue.GetPriority(orders, our_id)
+            if priority != nil && !queue.IsOrderDone(*priority, requests) {
+                lift_events.NewTargetFloor <- priority.Button.Floor
+            }
+
             requests = RemoveAcknowledgedRequests(requests, orders)
         }
     }

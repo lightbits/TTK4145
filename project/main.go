@@ -19,7 +19,7 @@ func main() {
     flag.Parse()
 
     var lift_events com.LiftEvents
-    lift_events.NewOrders      = make(chan []com.Order)
+    lift_events.NewTargetFloor = make(chan int)
     lift_events.FloorReached   = make(chan int)
     lift_events.StopButton     = make(chan bool)
     lift_events.Obstruction    = make(chan bool)
@@ -47,7 +47,7 @@ func main() {
         client_events.CompletedFloor,
         client_events.MissedDeadline,
         lift_events.FloorReached,
-        lift_events.NewOrders,
+        lift_events.NewTargetFloor,
         lift_events.StopButton,
         lift_events.Obstruction)
 

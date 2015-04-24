@@ -20,17 +20,27 @@ func IsNewOrder(request com.Order, orders []com.Order) bool {
     return true
 }
 
-func GetPriority(orders []com.Order, id network.ID) int {
+func IsOrderDone(order com.Order, orders []com.Order) bool {
     for _, o := range(orders) {
-        if o.TakenBy == id && o.Priority {
-            return o.Button.Floor
+        if IsSameOrder(o, order) && o.Done {
+            return true
         }
     }
-    return driver.INVALID_FLOOR
+    return false
+}
+
+func GetPriority(orders []com.Order, id network.ID) *com.Order {
+    for _, o := range(orders) {
+        if o.TakenBy == id && o.Priority {
+            return &o
+        }
+    }
+    return nil
 }
 
 func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) {
     if len(clients) == 0 {
+        // ASSERT that this does not happen!
         return
     }
 
@@ -81,7 +91,7 @@ func distanceSqrd(a, b int) int {
 }
 
 func closestActiveLift(clients map[network.ID]com.Client, floor int) network.ID {
-    closest_df := 100
+    closest_df := driver.N_FLOORS * driver.N_FLOORS
     closest_id := network.InvalidID
     for id, client := range(clients) {
         if client.HasTimedOut {

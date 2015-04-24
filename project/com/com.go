@@ -63,7 +63,7 @@ func EncodeClientData(c ClientData) []byte {
 
 type LiftEvents struct {
     FloorReached    chan int
-    NewOrders       chan []Order
+    NewTargetFloor  chan int
     StopButton      chan bool
     Obstruction     chan bool
 }
