@@ -11,6 +11,24 @@ import (
     "time"
 )
 
+func IsSameOrderList(A, B []com.Order) bool {
+    if len(A) != len(B) {
+        return false
+    }
+    for _, a := range(A) {
+        exists := false
+        for _, b := range(B) {
+            if queue.IsSameOrder(a, b) && a.Done == b.Done {
+                exists = true
+            }
+        }
+        if !exists {
+            return false
+        }
+    }
+    return true
+}
+
 func WaitForMaster(events           com.ClientEvents,
                    master_events    com.MasterEvents,
                    lift_events      com.LiftEvents,
@@ -45,6 +63,7 @@ func WaitForMaster(events           com.ClientEvents,
             }
             queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
             SetButtonLamps(orders, our_id)
+            println(logger.Info, "Giving new orders", orders)
             lift_events.NewOrders <- orders
 
         case <- time_to_ping.C:
@@ -128,8 +147,9 @@ func ClientLoop(events          com.ClientEvents,
     for {
         select {
         case <- master_timeout.C:
+            println(logger.Info, "Master timed out")
             if is_backup {
-                println(logger.Info, "Master timed out, taking over!")
+                println(logger.Info, "Taking over")
                 go master.WaitForBackup(master_events, orders, clients)
             } else {
                 WaitForMaster(events, master_events, lift_events, orders)
@@ -141,6 +161,7 @@ func ClientLoop(events          com.ClientEvents,
             println(logger.Fatal, "Failed to complete order within deadline")
 
         case <- time_to_send.C:
+            println(logger.Debug, "Sending")
             data := com.ClientData {
                 LastPassedFloor: lift.GetLastPassedFloor(),
                 Requests:        requests,
@@ -172,6 +193,9 @@ func ClientLoop(events          com.ClientEvents,
             }
             println(logger.Debug, "Master said", data)
             clients = data.Clients
+            if !IsSameOrderList(orders, data.Orders) {
+                println(logger.Info, data.Orders)
+            }
             orders = data.Orders
             is_backup = data.AssignedBackup == our_id
             SetButtonLamps(orders, our_id)

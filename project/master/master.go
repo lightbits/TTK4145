@@ -14,20 +14,24 @@ func WaitForBackup(events          com.MasterEvents,
                    initial_clients map[network.ID]com.Client) {
 
     machine_id := network.GetMachineID()
-    println(logger.Info, "Running on machine", machine_id)
+    println(logger.Info, "Waiting for backup on machine", machine_id)
     for {
         select {
         case packet := <- events.FromClient:
+            _, err := com.DecodeClientPacket(packet.Data)
+            if err != nil {
+                break
+            }
             // DEBUG:
-            MasterLoop(events, packet.Address, initial_queue, initial_clients)
-            return
+            // MasterLoop(events, packet.Address, initial_queue, initial_clients)
+            // return
 
-            // if packet.Address != machine_id {
-            //     MasterLoop(c, packet.Address, initial_queue, initial_clients)
-            //     return
-            // } else {
-            //     fmt.Println("[MASTER]\tCannot use own machine as backup client")
-            // }
+            if packet.Address != machine_id {
+                MasterLoop(events, packet.Address, initial_queue, initial_clients)
+                return
+            } else {
+                println(logger.Debug, "Cannot use own machine as backup client")
+            }
         }
     }
 }

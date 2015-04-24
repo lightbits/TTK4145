@@ -46,10 +46,12 @@ func Init(
         case <- door_timer.C:
             switch (state) {
                 case DoorOpen:
-                    println(logger.Debug, "Door timer @ DoorOpen")
+                    println(logger.Info, "Door timer @ DoorOpen")
+                    completed_floor <- target_floor
+                    target_floor = driver.INVALID_FLOOR
+                    deadline_timer.Stop()
                     driver.CloseDoor()
                     state = Idle
-                    target_floor = driver.INVALID_FLOOR
                 case Idle:    println(logger.Debug, "Door timer @ Idle")
                 case Moving:  println(logger.Debug, "Door timer @ Moving")
             }
@@ -58,16 +60,16 @@ func Init(
             missed_deadline <- true
 
         case orders := <- new_orders:
+            new_target := queue.GetPriority(orders, network.GetMachineID())
+            if new_target != driver.INVALID_FLOOR &&
+               target_floor != new_target {
+                target_floor = new_target
+                deadline_timer.Reset(ORDER_DEADLINE_INTERVAL)
+                println(logger.Info, "New target", target_floor)
+            }
             switch (state) {
                 case Idle:
                     println(logger.Debug, "New orders @ Idle")
-                    new_target := queue.GetPriority(orders, network.GetMachineID())
-                    if new_target != driver.INVALID_FLOOR &&
-                       target_floor != new_target {
-                        target_floor = new_target
-                        deadline_timer.Reset(ORDER_DEADLINE_INTERVAL)
-                        println(logger.Info, "New target", target_floor)
-                    }
                     if target_floor == driver.INVALID_FLOOR {
                         break
                     } else if target_floor > last_passed_floor {
@@ -80,8 +82,6 @@ func Init(
                         door_timer.Reset(3 * time.Second)
                         driver.OpenDoor()
                         state = DoorOpen
-                        completed_floor <- target_floor
-                        deadline_timer.Stop()
                     }
                 case Moving:   println(logger.Debug, "New orders @ Moving")
                 case DoorOpen: println(logger.Debug, "New orders @ DoorOpen")
@@ -98,8 +98,6 @@ func Init(
                         driver.MotorStop()
                         driver.OpenDoor()
                         state = DoorOpen
-                        completed_floor <- target_floor
-                        deadline_timer.Stop()
                     } else if target_floor > floor {
                         driver.MotorUp()
                     } else if target_floor < floor {
