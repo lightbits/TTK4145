@@ -17,28 +17,29 @@ func WaitForBackup(events          com.MasterEvents,
     println(logger.Info, "Waiting for backup on machine", machine_id)
     println(logger.Info, "Initial queue:", initial_queue)
     println(logger.Info, "Initial clients:", initial_clients)
+    can_use_self_as_backup_timer := time.NewTimer(5 * time.Second)
+    can_use_self_as_backup := false
     for {
         select {
+        case <- can_use_self_as_backup_timer.C:
+            can_use_self_as_backup = true
+
         case packet := <- events.FromClient:
             _, err := com.DecodeClientPacket(packet.Data)
             if err != nil {
                 break
             }
-            // DEBUG:
-            // MasterLoop(events, packet.Address, initial_queue, initial_clients)
-            // return
 
-            if packet.Address != machine_id {
-                MasterLoop(events, packet.Address, initial_queue, initial_clients)
+            if (packet.Address == machine_id && can_use_self_as_backup) ||
+               (packet.Address != machine_id) {
+                masterLoop(events, packet.Address, initial_queue, initial_clients)
                 return
-            } else {
-                println(logger.Debug, "Cannot use own machine as backup client")
             }
         }
     }
 }
 
-func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan network.ID) {
+func listenForClientTimeout(id network.ID, timer *time.Timer, timeout chan network.ID) {
     for {
         select {
         case <- timer.C:
@@ -47,7 +48,7 @@ func ListenForClientTimeout(id network.ID, timer *time.Timer, timeout chan netwo
     }
 }
 
-func AddNewOrders(requests, orders []com.Order, sender network.ID) []com.Order {
+func addNewOrders(requests, orders []com.Order, sender network.ID) []com.Order {
     for _, r := range(requests) {
         if r.Button.Type == driver.ButtonOut {
             r.TakenBy = sender
@@ -60,7 +61,7 @@ func AddNewOrders(requests, orders []com.Order, sender network.ID) []com.Order {
     return orders
 }
 
-func DeleteDoneOrders(requests, orders []com.Order) []com.Order {
+func deleteDoneOrders(requests, orders []com.Order) []com.Order {
     for i := 0; i < len(orders); i++ {
         for _, r := range(requests) {
             if queue.IsSameOrder(orders[i], r) && r.Done {
@@ -75,16 +76,7 @@ func DeleteDoneOrders(requests, orders []com.Order) []com.Order {
     return orders
 }
 
-func RemoveExternalAssignments(orders []com.Order, who network.ID) {
-    for i, o := range(orders) {
-        if o.TakenBy == who && o.Button.Type != driver.ButtonOut {
-            o.TakenBy = network.InvalidID
-            orders[i] = o
-        }
-    }
-}
-
-func MasterLoop(events          com.MasterEvents,
+func masterLoop(events          com.MasterEvents,
                 backup          network.ID,
                 initial_queue   []com.Order,
                 initial_clients map[network.ID]com.Client) {
@@ -105,7 +97,7 @@ func MasterLoop(events          com.MasterEvents,
         for _, c := range(initial_clients) {
             c.AliveTimer = time.NewTimer(TIMEOUT_INTERVAL)
             clients[c.ID] = c
-            go ListenForClientTimeout(c.ID, c.AliveTimer, client_timed_out)
+            go listenForClientTimeout(c.ID, c.AliveTimer, client_timed_out)
         }
     }
 
@@ -128,7 +120,7 @@ func MasterLoop(events          com.MasterEvents,
                     ID: sender_id,
                     AliveTimer: alive_timer,
                 }
-                go ListenForClientTimeout(sender_id, alive_timer, client_timed_out)
+                go listenForClientTimeout(sender_id, alive_timer, client_timed_out)
             }
             println(logger.Debug, "Resetting", packet.Address, "'s timer")
             client.AliveTimer.Reset(TIMEOUT_INTERVAL)
@@ -136,13 +128,16 @@ func MasterLoop(events          com.MasterEvents,
             client.LastPassedFloor = data.LastPassedFloor
             clients[sender_id] = client
 
-            orders = AddNewOrders(data.Requests, orders, sender_id)
-            orders = DeleteDoneOrders(data.Requests, orders)
+            orders = addNewOrders(data.Requests, orders, sender_id)
+            orders = deleteDoneOrders(data.Requests, orders)
 
 
         case <- time_to_send.C:
             println(logger.Debug, "Sending to clients")
-            queue.DistributeWork(clients, orders)
+            err := queue.DistributeWork(clients, orders)
+            if err != nil {
+                println(logger.Fatal, err)
+            }
             data := com.MasterData {
                 AssignedBackup: backup,
                 Orders:         orders,
@@ -156,7 +151,6 @@ func MasterLoop(events          com.MasterEvents,
             println(logger.Info, who, "timed out")
             client, exists := clients[who]
             if exists {
-                RemoveExternalAssignments(orders, who)
                 client.HasTimedOut = true
                 clients[who] = client
                 err := queue.DistributeWork(clients, orders)

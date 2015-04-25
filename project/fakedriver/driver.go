@@ -97,22 +97,6 @@ func Poll(button_pressed chan OrderButton,
             button_pressed <- OrderButton{arg, ButtonOut}
         }
     }
-    // for {
-    //     floor_reached <- 0
-    //     time.Sleep(3 * time.Second)
-    //     button_pressed <- OrderButton{3, ButtonDown}
-    //     button_pressed <- OrderButton{4, ButtonUp}
-    //     button_pressed <- OrderButton{4, ButtonOut}
-    //     time.Sleep(1 * time.Second)
-    //     floor_reached <- 1
-    //     time.Sleep(1 * time.Second)
-    //     floor_reached <- 2
-    //     time.Sleep(1 * time.Second)
-    //     floor_reached <- 3
-    //     time.Sleep(5 * time.Second)
-    //     floor_reached <- 4
-    //     break
-    // }
 }
 
 func println(level logger.Level, args...interface{}) {
