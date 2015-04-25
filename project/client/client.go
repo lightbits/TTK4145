@@ -11,24 +11,6 @@ import (
     "time"
 )
 
-func IsSameOrderList(A, B []com.Order) bool {
-    if len(A) != len(B) {
-        return false
-    }
-    for _, a := range(A) {
-        exists := false
-        for _, b := range(B) {
-            if queue.IsSameOrder(a, b) && a.Done == b.Done && a.TakenBy == b.TakenBy {
-                exists = true
-            }
-        }
-        if !exists {
-            return false
-        }
-    }
-    return true
-}
-
 func WaitForMaster(events           com.ClientEvents,
                    master_events    com.MasterEvents,
                    lift_events      com.LiftEvents) {
@@ -53,7 +35,7 @@ func WaitForMaster(events           com.ClientEvents,
                 }
                 println(logger.Info, "Have remaining:", orders)
                 queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
-                SetButtonLamps(orders, our_id)
+                setButtonLamps(orders, our_id)
                 priority := queue.GetPriority(orders, our_id)
                 if priority != nil {
                     lift_events.NewTargetFloor <- priority.Button.Floor
@@ -73,7 +55,7 @@ func WaitForMaster(events           com.ClientEvents,
                 }
             }
             queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
-            SetButtonLamps(orders, our_id)
+            setButtonLamps(orders, our_id)
             priority := queue.GetPriority(orders, our_id)
             if priority != nil {
                 lift_events.NewTargetFloor <- priority.Button.Floor
@@ -96,7 +78,7 @@ func WaitForMaster(events           com.ClientEvents,
                     TakenBy: our_id,
                 })
                 queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
-                SetButtonLamps(orders, our_id)
+                setButtonLamps(orders, our_id)
                 priority := queue.GetPriority(orders, our_id)
                 if priority != nil {
                     lift_events.NewTargetFloor <- priority.Button.Floor
@@ -107,7 +89,7 @@ func WaitForMaster(events           com.ClientEvents,
     }
 }
 
-func RemoveAcknowledgedRequests(requests, orders []com.Order) []com.Order {
+func removeAcknowledgedRequests(requests, orders []com.Order) []com.Order {
     for i := 0; i < len(requests); i++ {
         r := requests[i]
         master_has_it := false
@@ -131,7 +113,7 @@ func RemoveAcknowledgedRequests(requests, orders []com.Order) []com.Order {
     return requests
 }
 
-func SetButtonLamps(orders []com.Order, our_id network.ID) {
+func setButtonLamps(orders []com.Order, our_id network.ID) {
     driver.ClearAllButtonLamps()
     for _, o := range(orders) {
         if o.Button.Type == driver.ButtonOut && o.TakenBy != our_id {
@@ -208,23 +190,41 @@ func clientLoop(events          com.ClientEvents,
             }
             println(logger.Debug, "Master said", data)
             clients = data.Clients
-            if !IsSameOrderList(orders, data.Orders) {
+            if !isSameOrderList(orders, data.Orders) {
                 println(logger.Info, data.Orders)
             }
             orders = data.Orders
             is_backup = data.AssignedBackup == our_id
-            SetButtonLamps(orders, our_id)
+            setButtonLamps(orders, our_id)
 
             priority := queue.GetPriority(orders, our_id)
             if priority != nil && !queue.IsOrderDone(*priority, requests) {
                 lift_events.NewTargetFloor <- priority.Button.Floor
             }
 
-            requests = RemoveAcknowledgedRequests(requests, orders)
+            requests = removeAcknowledgedRequests(requests, orders)
         }
     }
 }
 
 func println(level logger.Level, args...interface{}) {
     logger.Println(level, "CLIENT", args...)
+}
+
+func isSameOrderList(A, B []com.Order) bool {
+    if len(A) != len(B) {
+        return false
+    }
+    for _, a := range(A) {
+        exists := false
+        for _, b := range(B) {
+            if queue.IsSameOrder(a, b) && a.Done == b.Done && a.TakenBy == b.TakenBy {
+                exists = true
+            }
+        }
+        if !exists {
+            return false
+        }
+    }
+    return true
 }
