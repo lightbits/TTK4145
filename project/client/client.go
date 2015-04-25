@@ -31,27 +31,33 @@ func IsSameOrderList(A, B []com.Order) bool {
 
 func WaitForMaster(events           com.ClientEvents,
                    master_events    com.MasterEvents,
-                   lift_events      com.LiftEvents,
-                   remaining_orders []com.Order) {
+                   lift_events      com.LiftEvents) {
 
     println(logger.Info, "Waiting for master, Hello Sailor!")
     time_to_ping := time.NewTicker(1*time.Second)
 
     our_id := network.GetMachineID()
     orders := make([]com.Order, 0)
-    for _, o := range(remaining_orders) {
-        if o.TakenBy == our_id {
-            orders = append(orders, o)
-        }
-    }
 
     for {
         select {
         case packet := <- events.FromMaster:
             println(logger.Debug, "Heard from a master")
             if len(orders) == 0 {
-                ClientLoop(events, master_events, lift_events, packet.Address)
-                return
+                remaining_orders := clientLoop(events, master_events, lift_events, packet.Address)
+                println(logger.Info, "Waiting for master")
+                for _, o := range(remaining_orders) {
+                    if o.TakenBy == our_id {
+                        orders = append(orders, o)
+                    }
+                }
+                println(logger.Info, "Have remaining:", orders)
+                queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
+                SetButtonLamps(orders, our_id)
+                priority := queue.GetPriority(orders, our_id)
+                if priority != nil {
+                    lift_events.NewTargetFloor <- priority.Button.Floor
+                }
             }
 
         case <- events.MissedDeadline:
@@ -135,10 +141,10 @@ func SetButtonLamps(orders []com.Order, our_id network.ID) {
     }
 }
 
-func ClientLoop(events          com.ClientEvents,
+func clientLoop(events          com.ClientEvents,
                 master_events   com.MasterEvents,
                 lift_events     com.LiftEvents,
-                master_id       network.ID) {
+                master_id       network.ID) []com.Order {
 
     MASTER_TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL := 250 * time.Millisecond
@@ -159,15 +165,11 @@ func ClientLoop(events          com.ClientEvents,
         case <- master_timeout.C:
             println(logger.Info, "Master timed out")
             if is_backup {
-                println(logger.Info, "Taking over")
+                println(logger.Info, "We are backup, spawning new master!")
                 go network.MasterWorker(master_events.FromClient, master_events.ToClients)
                 go master.WaitForBackup(master_events, orders, clients)
-                WaitForMaster(events, master_events, lift_events, orders)
-                return
-            } else {
-                WaitForMaster(events, master_events, lift_events, orders)
-                return
             }
+            return orders // Return remaining orders and wait for new master
 
         case <- events.MissedDeadline:
             driver.MotorStop()

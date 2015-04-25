@@ -2,13 +2,16 @@
     "folders":
     [
         {
-            "path": "./"
+            "path": "/C/Dokumenter/ttk4145"
+        },
+        {
+            "path": "project/master"
         }
     ],
     "settings":
     {
-        "draw_centered": true,
         "drag_text": false,
+        "draw_centered": true,
         "gutter": true,
         "word_wrap": true,
         "wrap_width": 100

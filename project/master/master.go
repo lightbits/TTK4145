@@ -15,10 +15,14 @@ func WaitForBackup(events          com.MasterEvents,
 
     machine_id := network.GetMachineID()
     println(logger.Info, "Waiting for backup on machine", machine_id)
-    println(logger.Info, "Initial queue:", initial_queue)
-    println(logger.Info, "Initial clients:", initial_clients)
-    can_use_self_as_backup_timer := time.NewTimer(5 * time.Second)
+
+    TIME_UNTIL_CAN_USE_SELF := 10 * time.Second
+    can_use_self_as_backup_timer := time.NewTimer(TIME_UNTIL_CAN_USE_SELF)
     can_use_self_as_backup := false
+
+    queue := initial_queue
+    clients := initial_clients
+
     for {
         select {
         case <- can_use_self_as_backup_timer.C:
@@ -32,8 +36,14 @@ func WaitForBackup(events          com.MasterEvents,
 
             if (packet.Address == machine_id && can_use_self_as_backup) ||
                (packet.Address != machine_id) {
-                masterLoop(events, packet.Address, initial_queue, initial_clients)
-                return
+                if packet.Address == machine_id {
+                    println(logger.Info, "Using self as backup!")
+                }
+                queue, clients = masterLoop(events, packet.Address, queue, clients)
+                println(logger.Info, "Waiting for backup on machine", machine_id)
+                println(logger.Info, "Have queue:", queue)
+                println(logger.Info, "Have clients:", clients)
+                can_use_self_as_backup_timer = time.NewTimer(TIME_UNTIL_CAN_USE_SELF)
             }
         }
     }
@@ -79,7 +89,8 @@ func deleteDoneOrders(requests, orders []com.Order) []com.Order {
 func masterLoop(events          com.MasterEvents,
                 backup          network.ID,
                 initial_queue   []com.Order,
-                initial_clients map[network.ID]com.Client) {
+                initial_clients map[network.ID]com.Client) ([]com.Order,
+                map[network.ID]com.Client) {
 
     TIMEOUT_INTERVAL := 5 * time.Second
     SEND_INTERVAL    := 250 * time.Millisecond
@@ -159,7 +170,7 @@ func masterLoop(events          com.MasterEvents,
                 }
             }
             if who == backup {
-                WaitForBackup(events, orders, clients)
+                return orders, clients // Return state and wait for new backup
             }
         }
     }

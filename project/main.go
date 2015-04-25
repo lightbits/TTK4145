@@ -67,5 +67,5 @@ func main() {
     }
 
     go network.ClientWorker(client_events.FromMaster, client_events.ToMaster)
-    client.WaitForMaster(client_events, master_events, lift_events, nil)
+    client.WaitForMaster(client_events, master_events, lift_events)
 }
