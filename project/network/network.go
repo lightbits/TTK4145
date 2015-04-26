@@ -37,7 +37,6 @@ func GetMachineID() ID {
 }
 
 func listen(socket *net.UDPConn, incoming chan Packet) {
-
     for {
         bytes := make([]byte, 1024)
         read_bytes, sender, err := socket.ReadFromUDP(bytes)
@@ -50,7 +49,6 @@ func listen(socket *net.UDPConn, incoming chan Packet) {
 }
 
 func broadcast(socket *net.UDPConn, to_port int, outgoing chan Packet) {
-
     bcast_addr := fmt.Sprintf("255.255.255.255:%d", to_port)
     remote, err := net.ResolveUDPAddr("udp", bcast_addr)
     if err != nil {

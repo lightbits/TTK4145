@@ -4,7 +4,7 @@ import (
     "../queue"
     "../com"
     "../network"
-    "../driversim"
+    "../driver"
     "../logger"
     "time"
 )

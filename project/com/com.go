@@ -1,7 +1,7 @@
 package com
 
 import (
-    "../driversim"
+    "../driver"
     "../network"
     "time"
     "encoding/json"

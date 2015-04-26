@@ -1,7 +1,7 @@
 package queue
 
 import (
-    "../driversim"
+    "../driver"
     "../network"
     "../com"
     "fmt"

@@ -2,7 +2,7 @@ package lift
 
 import (
     "time"
-    "../driversim"
+    "../driver"
     "../logger"
 )
 
