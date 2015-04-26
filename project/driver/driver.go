@@ -158,10 +158,10 @@ func Init() {
     MotorStop()
 }
 
-func Poll(button_pressed chan OrderButton,
-          floor_reached  chan int,
-          stop_pressed   chan bool,
-          obstruction    chan bool) {
+func Poll(button_pressed chan <- OrderButton,
+          floor_reached chan <- int,
+          stop_pressed chan <- bool,
+          obstruction chan <- bool) {
 
     up_ch   := make(chan io_event)
     down_ch := make(chan io_event)

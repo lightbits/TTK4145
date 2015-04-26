@@ -2,7 +2,7 @@ package client
 
 import (
     "../queue"
-    "../fakedriver"
+    "../driversim"
     "../network"
     "../com"
     "../master"

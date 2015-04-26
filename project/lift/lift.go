@@ -2,13 +2,20 @@ package lift
 
 import (
     "time"
-    "../fakedriver"
+    "../driversim"
     "../logger"
 )
 
 const deadline_period = 5 * driver.NumFloors * time.Second
 const door_period = 3 * time.Second
 var last_passed_floor int
+
+type state_t int
+const (
+    idle state_t = iota
+    doorOpen
+    moving
+)
 
 func GetLastPassedFloor() int {
     return last_passed_floor
@@ -28,14 +35,7 @@ func StatemachineLoop(
     door_timer := time.NewTimer(door_period)
     door_timer.Stop()
 
-    type State int
-    const (
-        Idle State = iota
-        DoorOpen
-        Moving
-    )
-    state := Idle
-
+    state := idle
     last_passed_floor = 0
     target_floor := driver.InvalidFloor
 
@@ -43,15 +43,15 @@ func StatemachineLoop(
         select {
         case <- door_timer.C:
             switch (state) {
-                case DoorOpen:
-                    println(logger.Info, "Door timer @ DoorOpen")
+                case doorOpen:
+                    println(logger.Info, "Door timer @ doorOpen")
                     driver.CloseDoor()
-                    state = Idle
+                    state = idle
                     completed_floor <- target_floor
                     target_floor = driver.InvalidFloor
                     deadline_timer.Stop()
-                case Idle:    println(logger.Debug, "Door timer @ Idle")
-                case Moving:  println(logger.Debug, "Door timer @ Moving")
+                case idle:    println(logger.Debug, "Door timer @ idle")
+                case moving:  println(logger.Debug, "Door timer @ moving")
             }
 
         case <- deadline_timer.C:
@@ -63,48 +63,48 @@ func StatemachineLoop(
             }
             target_floor = floor
             switch (state) {
-                case Idle:
-                    println(logger.Info, "New order @ Idle")
+                case idle:
+                    println(logger.Info, "New order @ idle")
                     if target_floor == driver.InvalidFloor {
                         break
                     } else if target_floor > last_passed_floor {
-                        state = Moving
+                        state = moving
                         driver.MotorUp()
                     } else if target_floor < last_passed_floor {
-                        state = Moving
+                        state = moving
                         driver.MotorDown()
                     } else {
                         door_timer.Reset(door_period)
                         driver.OpenDoor()
                         driver.MotorStop()
-                        state = DoorOpen
+                        state = doorOpen
                     }
-                case Moving:   println(logger.Debug, "New order @ Moving")
-                case DoorOpen: println(logger.Debug, "New order @ DoorOpen")
+                case moving:   println(logger.Debug, "New order @ moving")
+                case doorOpen: println(logger.Debug, "New order @ doorOpen")
             }
 
         case floor := <- floor_reached:
             last_passed_floor = floor
             switch (state) {
-                case Moving:
-                    println(logger.Info, "Reached floor", floor, "@ Moving")
+                case moving:
+                    println(logger.Info, "Reached floor", floor, "@ moving")
                     driver.SetFloorIndicator(floor)
                     if target_floor == driver.InvalidFloor {
                         break
                     } else if target_floor > last_passed_floor {
-                        state = Moving
+                        state = moving
                         driver.MotorUp()
                     } else if target_floor < last_passed_floor {
-                        state = Moving
+                        state = moving
                         driver.MotorDown()
                     } else {
                         door_timer.Reset(door_period)
                         driver.OpenDoor()
                         driver.MotorStop()
-                        state = DoorOpen
+                        state = doorOpen
                     }
-                case Idle:     println(logger.Info, "Reached floor", floor, "@ Idle")
-                case DoorOpen: println(logger.Info, "Reached floor", floor, "@ DoorOpen")
+                case idle:     println(logger.Info, "Reached floor", floor, "@ idle")
+                case doorOpen: println(logger.Info, "Reached floor", floor, "@ doorOpen")
             }
 
         case <- stop_button: // Ignoring

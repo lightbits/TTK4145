@@ -25,7 +25,6 @@ type OrderButton struct {
 func listenForUserInput(input chan string) {
     reader := bufio.NewReader(os.Stdin)
     for {
-        // fmt.Printf(">>")
         line, _, err := reader.ReadLine()
         if err != nil {
             fmt.Println(err)
@@ -74,10 +73,10 @@ func Init() {
     println(logger.Info, "Initialized")
 }
 
-func Poll(button_pressed chan OrderButton,
-          floor_reached  chan int,
-          stop_pressed   chan bool,
-          obstruction    chan bool) {
+func Poll(button_pressed chan <- OrderButton,
+          floor_reached chan <- int,
+          stop_pressed chan <- bool,
+          obstruction chan <- bool) {
 
     input := make(chan string)
     go listenForUserInput(input)

@@ -4,7 +4,7 @@ import (
     "../queue"
     "../com"
     "../network"
-    "../fakedriver"
+    "../driversim"
     "../logger"
     "time"
 )
@@ -13,8 +13,8 @@ const client_timeout_period = 5 * time.Second
 const net_send_period = 250 * time.Millisecond
 const can_use_self_as_backup_period = 10 * time.Second
 
-func WaitForBackup(events          com.MasterEvents,
-                   initial_queue   []com.Order,
+func WaitForBackup(events com.MasterEvents,
+                   initial_queue []com.Order,
                    initial_clients map[network.ID]com.Client) {
 
     machine_id := network.GetMachineID()
