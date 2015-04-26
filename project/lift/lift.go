@@ -2,7 +2,7 @@ package lift
 
 import (
     "time"
-    "../fakedriver"
+    "../driver"
     "../logger"
 )
 
@@ -12,7 +12,7 @@ func GetLastPassedFloor() int {
     return last_passed_floor
 }
 
-func Init(
+func StatemachineLoop(
     completed_floor  chan int,
     missed_deadline  chan bool,
     floor_reached    chan int,
@@ -75,6 +75,7 @@ func Init(
                     } else {
                         door_timer.Reset(3 * time.Second)
                         driver.OpenDoor()
+                        driver.MotorStop()
                         state = DoorOpen
                     }
                 case Moving:   println(logger.Debug, "New order @ Moving")
@@ -98,6 +99,7 @@ func Init(
                     } else {
                         door_timer.Reset(3 * time.Second)
                         driver.OpenDoor()
+                        driver.MotorStop()
                         state = DoorOpen
                     }
                 case Idle:     println(logger.Info, "Reached floor", floor, "@ Idle")

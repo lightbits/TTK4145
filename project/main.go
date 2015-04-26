@@ -4,7 +4,7 @@ import (
     "flag"
     "./lift"
     "./network"
-    "./fakedriver"
+    "./driver"
     "./com"
     "./client"
     "./master"
@@ -43,7 +43,7 @@ func main() {
         lift_events.StopButton,
         lift_events.Obstruction)
 
-    go lift.Init(
+    go lift.StatemachineLoop(
         client_events.CompletedFloor,
         client_events.MissedDeadline,
         lift_events.FloorReached,
