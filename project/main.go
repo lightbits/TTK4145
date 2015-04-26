@@ -4,7 +4,7 @@ import (
     "flag"
     "./lift"
     "./network"
-    "./driver"
+    "./fakedriver"
     "./com"
     "./client"
     "./master"

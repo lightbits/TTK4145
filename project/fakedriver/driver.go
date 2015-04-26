@@ -1,15 +1,14 @@
 package driver
 
 import (
-    // "time"
     "../logger"
     "bufio"
     "os"
     "fmt"
 )
 
-const N_FLOORS = 4
-const INVALID_FLOOR = -1
+const NumFloors = 4
+const InvalidFloor = -1
 
 type ButtonType int
 const (

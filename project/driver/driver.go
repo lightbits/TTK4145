@@ -34,7 +34,7 @@ type bit_state struct {
     was_set bool
 }
 
-func poll(bits [N_FLOORS]bit_state, event chan io_event, edge edge_detect) {
+func poll(bits [NumFloors]bit_state, event chan io_event, edge edge_detect) {
     for {
         for i := 0; i < len(bits); i++ {
             is_set := io_read_bit(bits[i].channel) == 1
@@ -72,14 +72,14 @@ func MotorStop() {
 
 func SetButtonLamp(btn OrderButton, set bool) {
     lights := up_lights
-    if btn.Floor >= N_FLOORS {
+    if btn.Floor >= NumFloors {
         println(logger.Info, "Tried to set light on non-existent floor")
     }
 
     switch btn.Type {
     case ButtonUp:
         lights = up_lights
-        if btn.Floor >= N_FLOORS - 1 {
+        if btn.Floor >= NumFloors - 1 {
             println(logger.Info, "Tried to set light on non-existent floor")
         }
     case ButtonDown:
@@ -99,9 +99,9 @@ func SetButtonLamp(btn OrderButton, set bool) {
 }
 
 func ClearAllButtonLamps() {
-    for f := 0; f < N_FLOORS; f++ {
-        if f < N_FLOORS - 1 {
-            SetButtonLamp(OrderButton{f, ButtonUp},   false)
+    for f := 0; f < NumFloors; f++ {
+        if f < NumFloors - 1 {
+            SetButtonLamp(OrderButton{f, ButtonUp}, false)
         }
         if f > 0 {
             SetButtonLamp(OrderButton{f, ButtonDown}, false)
@@ -110,20 +110,12 @@ func ClearAllButtonLamps() {
     }
 }
 
-func SetDoorOpenLamp(on bool) {
-    if on {
-        io_set_bit(LIGHT_DOOR_OPEN);
-    } else {
-        io_clear_bit(LIGHT_DOOR_OPEN);
-    }
-}
-
 func OpenDoor() {
-    SetDoorOpenLamp(true)
+    io_set_bit(LIGHT_DOOR_OPEN)
 }
 
 func CloseDoor() {
-    SetDoorOpenLamp(false)
+    io_clear_bit(LIGHT_DOOR_OPEN)
 }
 
 func SetStopLamp(on bool) {
@@ -155,23 +147,12 @@ func Init() {
         println(logger.Fatal, "Failed to initialize driver")
     }
 
-    // Zero all floor button lamps
-    for i := 0; i < N_FLOORS; i++ {
-        if i != 0 {
-            SetButtonLamp(OrderButton{i, ButtonDown}, false)
-        }
-        if i != N_FLOORS - 1 {
-            SetButtonLamp(OrderButton{i, ButtonUp}, false)
-        }
-        SetButtonLamp(OrderButton{i, ButtonOut}, false)
-    }
+    ClearAllButtonLamps()
 
-    // Clear stop lamp, door open lamp, and set floor indicator to ground floor
     SetDoorOpenLamp(false)
     SetStopLamp(false)
     SetFloorIndicator(0)
 
-    // Drive to bottom floor
     MotorDown()
     for io_read_bit(SENSOR_FLOOR1) != 1 { }
     MotorStop()

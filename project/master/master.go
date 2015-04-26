@@ -4,10 +4,14 @@ import (
     "../queue"
     "../com"
     "../network"
-    "../driver"
+    "../fakedriver"
     "../logger"
     "time"
 )
+
+const client_timeout_period = 5 * time.Second
+const net_send_period = 250 * time.Millisecond
+const can_use_self_as_backup_period = 10 * time.Second
 
 func WaitForBackup(events          com.MasterEvents,
                    initial_queue   []com.Order,
@@ -16,8 +20,7 @@ func WaitForBackup(events          com.MasterEvents,
     machine_id := network.GetMachineID()
     println(logger.Info, "Waiting for backup on machine", machine_id)
 
-    TIME_UNTIL_CAN_USE_SELF := 10 * time.Second
-    can_use_self_as_backup_timer := time.NewTimer(TIME_UNTIL_CAN_USE_SELF)
+    can_use_self_as_backup_timer := time.NewTimer(can_use_self_as_backup_period)
     can_use_self_as_backup := false
 
     queue := initial_queue
@@ -43,7 +46,7 @@ func WaitForBackup(events          com.MasterEvents,
                 println(logger.Info, "Waiting for backup on machine", machine_id)
                 println(logger.Info, "Have queue:", queue)
                 println(logger.Info, "Have clients:", clients)
-                can_use_self_as_backup_timer = time.NewTimer(TIME_UNTIL_CAN_USE_SELF)
+                can_use_self_as_backup_timer = time.NewTimer(can_use_self_as_backup_period)
             }
         }
     }
@@ -86,16 +89,13 @@ func deleteDoneOrders(requests, orders []com.Order) []com.Order {
     return orders
 }
 
-func masterLoop(events          com.MasterEvents,
-                backup          network.ID,
-                initial_queue   []com.Order,
+func masterLoop(events com.MasterEvents,
+                backup network.ID,
+                initial_queue []com.Order,
                 initial_clients map[network.ID]com.Client) ([]com.Order,
                 map[network.ID]com.Client) {
 
-    TIMEOUT_INTERVAL := 5 * time.Second
-    SEND_INTERVAL    := 250 * time.Millisecond
-
-    time_to_send     := time.NewTicker(SEND_INTERVAL)
+    time_to_send := time.NewTicker(net_send_period)
     client_timed_out := make(chan network.ID)
 
     orders := initial_queue
@@ -106,7 +106,7 @@ func masterLoop(events          com.MasterEvents,
     clients := make(map[network.ID]com.Client)
     if initial_clients != nil {
         for _, c := range(initial_clients) {
-            c.AliveTimer = time.NewTimer(TIMEOUT_INTERVAL)
+            c.AliveTimer = time.NewTimer(client_timeout_period)
             clients[c.ID] = c
             go listenForClientTimeout(c.ID, c.AliveTimer, client_timed_out)
         }
@@ -126,7 +126,7 @@ func masterLoop(events          com.MasterEvents,
             client, exists := clients[sender_id]
             if !exists {
                 println(logger.Info, "Adding new client", sender_id)
-                alive_timer := time.NewTimer(TIMEOUT_INTERVAL)
+                alive_timer := time.NewTimer(client_timeout_period)
                 client = com.Client {
                     ID: sender_id,
                     AliveTimer: alive_timer,
@@ -134,7 +134,7 @@ func masterLoop(events          com.MasterEvents,
                 go listenForClientTimeout(sender_id, alive_timer, client_timed_out)
             }
             println(logger.Debug, "Resetting", packet.Address, "'s timer")
-            client.AliveTimer.Reset(TIMEOUT_INTERVAL)
+            client.AliveTimer.Reset(client_timeout_period)
             client.HasTimedOut = false
             client.LastPassedFloor = data.LastPassedFloor
             clients[sender_id] = client

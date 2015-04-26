@@ -1,7 +1,7 @@
 package queue
 
 import (
-    "../driver"
+    "../fakedriver"
     "../network"
     "../com"
     "fmt"
@@ -40,7 +40,6 @@ func GetPriority(orders []com.Order, id network.ID) *com.Order {
 }
 
 func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) error {
-    // Distribute to closest lift
     for i, o := range(orders) {
         if (o.Button.Type != driver.ButtonOut) &&
            (o.TakenBy == network.InvalidID ||
@@ -62,7 +61,7 @@ func DistributeWork(clients map[network.ID]com.Client, orders []com.Order) error
 }
 
 func PrioritizeOrdersForSingleLift(orders []com.Order, id network.ID, last_passed_floor int) {
-    target_floor := driver.INVALID_FLOOR
+    target_floor := driver.InvalidFloor
     current_pri  := -1
     for index, order := range(orders) {
         if order.TakenBy == id && order.Priority {
@@ -72,7 +71,7 @@ func PrioritizeOrdersForSingleLift(orders []com.Order, id network.ID, last_passe
     }
 
     better_pri := -1
-    if target_floor != driver.INVALID_FLOOR {
+    if target_floor != driver.InvalidFloor {
         better_pri = closestOrderAlong(id, orders, last_passed_floor, target_floor)
     } else {
         better_pri = closestOrderNear(id, orders, last_passed_floor)
@@ -91,7 +90,7 @@ func distanceSqrd(a, b int) int {
 }
 
 func closestActiveLift(clients map[network.ID]com.Client, floor int) network.ID {
-    closest_df := driver.N_FLOORS * driver.N_FLOORS
+    closest_df := driver.NumFloors * driver.NumFloors
     closest_id := network.InvalidID
     for id, client := range(clients) {
         if client.HasTimedOut {

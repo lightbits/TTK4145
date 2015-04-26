@@ -2,10 +2,12 @@ package lift
 
 import (
     "time"
-    "../driver"
+    "../fakedriver"
     "../logger"
 )
 
+const deadline_period = 5 * driver.NumFloors * time.Second
+const door_period = 3 * time.Second
 var last_passed_floor int
 
 func GetLastPassedFloor() int {
@@ -13,18 +15,17 @@ func GetLastPassedFloor() int {
 }
 
 func StatemachineLoop(
-    completed_floor  chan int,
-    missed_deadline  chan bool,
-    floor_reached    chan int,
-    new_target_floor chan int,
-    stop_button      chan bool,
-    obstruction      chan bool) {
+    completed_floor  chan <- int,
+    missed_deadline  chan <- bool,
+    floor_reached    <- chan int,
+    new_target_floor <- chan int,
+    stop_button      <- chan bool,
+    obstruction      <- chan bool) {
 
-    ORDER_DEADLINE_INTERVAL := 5 * driver.N_FLOORS * time.Second
-    deadline_timer := time.NewTimer(ORDER_DEADLINE_INTERVAL)
+    deadline_timer := time.NewTimer(deadline_period)
     deadline_timer.Stop()
 
-    door_timer := time.NewTimer(3 * time.Second)
+    door_timer := time.NewTimer(door_period)
     door_timer.Stop()
 
     type State int
@@ -36,7 +37,7 @@ func StatemachineLoop(
     state := Idle
 
     last_passed_floor = 0
-    target_floor := driver.INVALID_FLOOR
+    target_floor := driver.InvalidFloor
 
     for {
         select {
@@ -47,7 +48,7 @@ func StatemachineLoop(
                     driver.CloseDoor()
                     state = Idle
                     completed_floor <- target_floor
-                    target_floor = driver.INVALID_FLOOR
+                    target_floor = driver.InvalidFloor
                     deadline_timer.Stop()
                 case Idle:    println(logger.Debug, "Door timer @ Idle")
                 case Moving:  println(logger.Debug, "Door timer @ Moving")
@@ -58,13 +59,13 @@ func StatemachineLoop(
 
         case floor := <- new_target_floor:
             if target_floor != floor {
-                deadline_timer.Reset(ORDER_DEADLINE_INTERVAL)
+                deadline_timer.Reset(deadline_period)
             }
             target_floor = floor
             switch (state) {
                 case Idle:
                     println(logger.Info, "New order @ Idle")
-                    if target_floor == driver.INVALID_FLOOR {
+                    if target_floor == driver.InvalidFloor {
                         break
                     } else if target_floor > last_passed_floor {
                         state = Moving
@@ -73,7 +74,7 @@ func StatemachineLoop(
                         state = Moving
                         driver.MotorDown()
                     } else {
-                        door_timer.Reset(3 * time.Second)
+                        door_timer.Reset(door_period)
                         driver.OpenDoor()
                         driver.MotorStop()
                         state = DoorOpen
@@ -88,7 +89,7 @@ func StatemachineLoop(
                 case Moving:
                     println(logger.Info, "Reached floor", floor, "@ Moving")
                     driver.SetFloorIndicator(floor)
-                    if target_floor == driver.INVALID_FLOOR {
+                    if target_floor == driver.InvalidFloor {
                         break
                     } else if target_floor > last_passed_floor {
                         state = Moving
@@ -97,7 +98,7 @@ func StatemachineLoop(
                         state = Moving
                         driver.MotorDown()
                     } else {
-                        door_timer.Reset(3 * time.Second)
+                        door_timer.Reset(door_period)
                         driver.OpenDoor()
                         driver.MotorStop()
                         state = DoorOpen

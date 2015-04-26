@@ -4,8 +4,8 @@ package driver
 // #cgo LDFLAGS: -L. -lcomedi -lm
 import "C"
 
-const N_FLOORS = 4
-const INVALID_FLOOR = -1
+const NumFloors = 4
+const InvalidFloor = -1
 
 const (
     //in port 4
@@ -62,34 +62,34 @@ const (
     LIGHT_UP4           = -1
 )
 
-var up_buttons = [N_FLOORS]bit_state{
+var up_buttons = [NumFloors]bit_state{
     bit_state{BUTTON_UP1, false},
     bit_state{BUTTON_UP2, false},
     bit_state{BUTTON_UP3, false},
     bit_state{BUTTON_UP4, false}}
 
-var down_buttons = [N_FLOORS]bit_state{
+var down_buttons = [NumFloors]bit_state{
     bit_state{BUTTON_DOWN1, false},
     bit_state{BUTTON_DOWN2, false},
     bit_state{BUTTON_DOWN3, false},
     bit_state{BUTTON_DOWN4, false}}
 
-var out_buttons = [N_FLOORS]bit_state{
+var out_buttons = [NumFloors]bit_state{
     bit_state{BUTTON_COMMAND1, false},
     bit_state{BUTTON_COMMAND2, false},
     bit_state{BUTTON_COMMAND3, false},
     bit_state{BUTTON_COMMAND4, false}}
 
-var floor_sensors = [N_FLOORS]bit_state{
+var floor_sensors = [NumFloors]bit_state{
     bit_state{SENSOR_FLOOR1, false},
     bit_state{SENSOR_FLOOR2, false},
     bit_state{SENSOR_FLOOR3, false},
     bit_state{SENSOR_FLOOR4, false}}
 
-var obstructions = [N_FLOORS]bit_state{
+var obstructions = [NumFloors]bit_state{
     bit_state{OBSTRUCTION, false}}
 
-var stop_buttons = [N_FLOORS]bit_state{
+var stop_buttons = [NumFloors]bit_state{
     bit_state{STOP, false}}
 
 var up_lights   = []int{LIGHT_UP1,      LIGHT_UP2,      LIGHT_UP3,      LIGHT_UP4}

@@ -1,7 +1,7 @@
 package com
 
 import (
-    "../driver"
+    "../fakedriver"
     "../network"
     "time"
     "encoding/json"

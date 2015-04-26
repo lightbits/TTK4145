@@ -2,7 +2,7 @@ package client
 
 import (
     "../queue"
-    "../driver"
+    "../fakedriver"
     "../network"
     "../com"
     "../master"
@@ -11,12 +11,16 @@ import (
     "time"
 )
 
-func WaitForMaster(events           com.ClientEvents,
-                   master_events    com.MasterEvents,
-                   lift_events      com.LiftEvents) {
+const master_timeout_period = 5 * time.Second
+const net_send_period = 250 * time.Millisecond
+const net_ping_period = 250 * time.Millisecond
 
-    println(logger.Info, "Waiting for master, Hello Sailor!")
-    time_to_ping := time.NewTicker(1*time.Second)
+func WaitForMaster(events com.ClientEvents,
+                   master_events com.MasterEvents,
+                   lift_events com.LiftEvents) {
+
+    println(logger.Info, "Waiting for master")
+    time_to_ping := time.NewTicker(net_ping_period)
 
     our_id := network.GetMachineID()
     orders := make([]com.Order, 0)
@@ -26,13 +30,16 @@ func WaitForMaster(events           com.ClientEvents,
         case packet := <- events.FromMaster:
             println(logger.Debug, "Heard from a master")
             if len(orders) == 0 {
-                remaining_orders := clientLoop(events, master_events, lift_events, packet.Address)
+                println(logger.Info, "Starting client with master", packet.Address)
+                remaining_orders := clientLoop(events, master_events, lift_events)
+
                 println(logger.Info, "Waiting for master")
                 for _, o := range(remaining_orders) {
                     if o.TakenBy == our_id {
                         orders = append(orders, o)
                     }
                 }
+
                 println(logger.Info, "Have remaining:", orders)
                 queue.PrioritizeOrdersForSingleLift(orders, our_id, lift.GetLastPassedFloor())
                 setButtonLamps(orders, our_id)
@@ -123,16 +130,12 @@ func setButtonLamps(orders []com.Order, our_id network.ID) {
     }
 }
 
-func clientLoop(events          com.ClientEvents,
-                master_events   com.MasterEvents,
-                lift_events     com.LiftEvents,
-                master_id       network.ID) []com.Order {
+func clientLoop(events com.ClientEvents,
+                master_events com.MasterEvents,
+                lift_events com.LiftEvents) []com.Order {
 
-    MASTER_TIMEOUT_INTERVAL := 5 * time.Second
-    SEND_INTERVAL := 250 * time.Millisecond
-
-    master_timeout := time.NewTimer(MASTER_TIMEOUT_INTERVAL)
-    time_to_send := time.NewTicker(SEND_INTERVAL)
+    master_timeout := time.NewTimer(master_timeout_period)
+    time_to_send := time.NewTicker(net_send_period)
 
     clients := make(map[network.ID]com.Client)
     orders := make([]com.Order, 0)
@@ -141,7 +144,6 @@ func clientLoop(events          com.ClientEvents,
     our_id := network.GetMachineID()
     is_backup := false
 
-    println(logger.Info, "Starting client with master", master_id)
     for {
         select {
         case <- master_timeout.C:
@@ -183,7 +185,7 @@ func clientLoop(events          com.ClientEvents,
             }
 
         case packet := <- events.FromMaster:
-            master_timeout.Reset(MASTER_TIMEOUT_INTERVAL)
+            master_timeout.Reset(master_timeout_period)
             data, err := com.DecodeMasterPacket(packet.Data)
             if err != nil {
                 break
