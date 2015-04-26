@@ -21,7 +21,7 @@ func GetLastPassedFloor() int {
     return last_passed_floor
 }
 
-func StatemachineLoop(
+func Init(
     completed_floor  chan <- int,
     missed_deadline  chan <- bool,
     floor_reached    <- chan int,

@@ -97,6 +97,7 @@ func masterLoop(events com.MasterEvents,
 
     time_to_send := time.NewTicker(net_send_period)
     client_timed_out := make(chan network.ID)
+    machine_id := network.GetMachineID()
 
     orders := initial_queue
     if initial_queue == nil {
@@ -122,6 +123,11 @@ func masterLoop(events com.MasterEvents,
             }
             println(logger.Debug, "Client said", data)
 
+            if backup == machine_id && packet.Address != machine_id {
+                backup = packet.Address
+                println(logger.Info, "Changing backup to remote machine:", backup)
+            }
+
             sender_id := packet.Address
             client, exists := clients[sender_id]
             if !exists {
@@ -141,7 +147,6 @@ func masterLoop(events com.MasterEvents,
 
             orders = addNewOrders(data.Requests, orders, sender_id)
             orders = deleteDoneOrders(data.Requests, orders)
-
 
         case <- time_to_send.C:
             println(logger.Debug, "Sending to clients")

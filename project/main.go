@@ -43,7 +43,7 @@ func main() {
         lift_events.StopButton,
         lift_events.Obstruction)
 
-    go lift.StatemachineLoop(
+    go lift.Init(
         client_events.CompletedFloor,
         client_events.MissedDeadline,
         lift_events.FloorReached,
